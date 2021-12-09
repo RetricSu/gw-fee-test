@@ -11,8 +11,12 @@ commands for different environments
     "start:mainnet": "ENV_PATH=./.mainnet.env ts-node ./src/index.ts",
 ```
 
+## test 1
+
 ```sh
-MAX_ACCOUNTS=20 yarn start:devnet
+MAX_ACCOUNTS=20 EXECUTE_NUMBER=20 yarn start:devnet
 ```
 
-the `MAX_ACCOUNTS` can be set from env to control how many accounts used for sending transaction to run the fee test.
+the `MAX_ACCOUNTS` can be set from env to control how many accounts used for sending transaction to run the test 1.
+
+the `EXECUTE_NUMBER` (default is 10) can be set from env to control how many rounds you want the 3 accounts to continually send transaction to run the test 2.
