@@ -11,7 +11,7 @@ commands for different environments
     "start:mainnet": "ENV_PATH=./.mainnet.env ts-node ./src/index.ts",
 ```
 
-## test 1
+## test
 
 ```sh
 MAX_ACCOUNTS=20 EXECUTE_NUMBER=20 yarn start:devnet
