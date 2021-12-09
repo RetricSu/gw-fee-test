@@ -24,6 +24,8 @@ const fee = async () => {
   try {
     const results = await test.run();
     await outputTestReport(results);
+
+    await test.runTest2();
     process.exit(0);
   } catch (error) {
     console.log(error);
