@@ -4,6 +4,12 @@ import SudtContractArtifacts from "../../contracts/erc20.json";
 import { Tester } from "./base";
 import { deployContract, getWeb3 } from "./helper";
 
+const DEFAULT_MINI_CURRENT_GAS_PRICE = "200"; // only used when rpc gas price return 0x1;
+// 3 grades of gas price rate: price * RATE / 10;
+const LOW_RATE_IN_10 = 5;
+const HIGH_RATE_IN_10 = 20;
+const EVEN_RATE_IN_10 = 11;
+
 const ERC20_NAME = "test";
 const ERC20_SYMBOL = "tt";
 const ERC20_TOTAL_SUPPLY = "160000000000000000000000000000";
@@ -61,15 +67,19 @@ export class FeeTest extends Tester {
     }
 
     const gasPrice = await getGasPrice();
-    const currentGasPrice = gasPrice === "1" ? "21000" : gasPrice;
+    const currentGasPrice =
+      gasPrice === "1" ? DEFAULT_MINI_CURRENT_GAS_PRICE : gasPrice;
 
     const lowGasPrice = (
-      (BigInt(currentGasPrice) * BigInt(8)) /
+      (BigInt(currentGasPrice) * BigInt(LOW_RATE_IN_10)) /
       BigInt(10)
     ).toString(10);
-    const evenGasPrice = (BigInt(currentGasPrice) * BigInt(1)).toString(10);
+    const evenGasPrice = (
+      (BigInt(currentGasPrice) * BigInt(EVEN_RATE_IN_10)) /
+      BigInt(10)
+    ).toString(10);
     const highGasPrice = (
-      (BigInt(currentGasPrice) * BigInt(12)) /
+      (BigInt(currentGasPrice) * BigInt(HIGH_RATE_IN_10)) /
       BigInt(10)
     ).toString(10);
     const gasPriceList = [lowGasPrice, evenGasPrice, highGasPrice];
@@ -163,15 +173,19 @@ export class FeeTest extends Tester {
     }
 
     const gasPrice = await getGasPrice();
-    const currentGasPrice = gasPrice === "1" ? "21000" : gasPrice;
+    const currentGasPrice =
+      gasPrice === "1" ? DEFAULT_MINI_CURRENT_GAS_PRICE : gasPrice;
 
     const lowGasPrice = (
-      (BigInt(currentGasPrice) * BigInt(8)) /
+      (BigInt(currentGasPrice) * BigInt(LOW_RATE_IN_10)) /
       BigInt(10)
     ).toString(10);
-    const evenGasPrice = (BigInt(currentGasPrice) * BigInt(1)).toString(10);
+    const evenGasPrice = (
+      (BigInt(currentGasPrice) * BigInt(EVEN_RATE_IN_10)) /
+      BigInt(10)
+    ).toString(10);
     const highGasPrice = (
-      (BigInt(currentGasPrice) * BigInt(12)) /
+      (BigInt(currentGasPrice) * BigInt(HIGH_RATE_IN_10)) /
       BigInt(10)
     ).toString(10);
     const gasPriceList = [lowGasPrice, evenGasPrice, highGasPrice];

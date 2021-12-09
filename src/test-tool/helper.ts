@@ -9,6 +9,7 @@ import PolyjuiceHttpProvider, {
 import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
+import { privKeys as predefinePrivateKeys } from "../configs/predefine-accounts";
 const Contract = require("web3-eth-contract");
 
 dotenv.config({
@@ -111,4 +112,29 @@ export async function loadJsonFile(
     console.error(`json file not exist, err: ${error.message}`);
     return null;
   }
+}
+
+export async function saveJsonFile(jsonObj: Object, path: string) {
+  const data = JSON.stringify(jsonObj, null, 2);
+  try {
+    await fs.writeFileSync(path, data);
+    return true;
+  } catch (error) {
+    console.error(`can not save the json file, err: ${error.message}`);
+    return false;
+  }
+}
+
+export async function generateAlphaNetAccounts() {
+  const jsonData: TestAccount[] = [];
+  for (const key of predefinePrivateKeys) {
+    const address = privateKeyToEthAddress(key);
+    const testAccount: TestAccount = {
+      ethAddress: address,
+      privateKey: key,
+    };
+    jsonData.push(testAccount);
+  }
+  const filePath = path.resolve(__dirname, "../../test-accounts.json");
+  await saveJsonFile(jsonData, filePath);
 }

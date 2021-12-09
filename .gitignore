@@ -108,4 +108,5 @@ dist
 node_modules/
 lib/
 test-accounts.json
+devnet-test-accounts.json
 .DS_Store
