@@ -13,6 +13,16 @@ commands for different environments
 
 ## test
 
+- test1
+
+every test accounts will send only one transaction in total with different gasPrice, then we output all the receipt time in ASC order.
+
+- test2
+
+only take first 3 accounts, each account use a fix gasPrice to send one transaction in a row, then we execute N rows to collect the average receipt time for these 3 accounts and output it.
+
+by running the follow command, the test1 and test2 will be execute in order.
+
 ```sh
 MAX_ACCOUNTS=20 EXECUTE_NUMBER=20 yarn start:devnet
 ```
