@@ -198,52 +198,70 @@ export class FeeTest extends Tester {
       : 10;
 
     const executeOneRow = async () => {
+      const txs = [];
       for (const index of [0, 1, 2]) {
         const account = this.testAccounts[index];
         const gasPrice = gasPriceList[index];
+        const sendTx = new Promise(async (resolve, reject) => {
+          try {
+            const { Contract } = getWeb3(account.privateKey, ABI);
+            const contract = new Contract(ABI, this.contractAddress);
 
-        const { Contract } = getWeb3(account.privateKey, ABI);
-        const contract = new Contract(ABI, this.contractAddress);
+            const date1 = new Date();
+            const nextAccount: TestAccount =
+              +index + 1 === that.testAccounts.length
+                ? that.testAccounts[0]
+                : that.testAccounts[index];
+            const receipt = await contract.methods
+              .transfer(nextAccount.ethAddress, 1)
+              .send({
+                from: account.ethAddress,
+                gasPrice: gasPrice,
+              });
+            const date2 = new Date();
+            const diffInMilSecs = date2.getTime() - date1.getTime();
 
-        const date1 = new Date();
-        const nextAccount: TestAccount =
-          +index + 1 === that.testAccounts.length
-            ? that.testAccounts[0]
-            : that.testAccounts[index];
-        await contract.methods.transfer(nextAccount.ethAddress, 1).send({
-          from: account.ethAddress,
-          gasPrice: gasPrice,
+            const gasPriceType = getGasPriceTypeById(index);
+
+            switch (gasPriceType) {
+              case GasPriceType.Low:
+                lowGasPriceResults.push(diffInMilSecs);
+                break;
+
+              case GasPriceType.Even:
+                evenGasPriceResults.push(diffInMilSecs);
+                break;
+
+              case GasPriceType.High:
+                highGasPriceResults.push(diffInMilSecs);
+                break;
+
+              default:
+                throw new Error(`undefined gasPriceType. ${gasPriceType}`);
+            }
+
+            console.log(
+              `account ${index} finished, gasPrice: ${gasPrice}, time: ${diffInMilSecs}m`
+            );
+
+            return resolve(receipt);
+          } catch (error) {
+            return reject(error);
+          }
         });
-        const date2 = new Date();
-        const diffInMilSecs = date2.getTime() - date1.getTime();
-
-        const gasPriceType = getGasPriceTypeById(index);
-
-        switch (gasPriceType) {
-          case GasPriceType.Low:
-            lowGasPriceResults.push(diffInMilSecs);
-            break;
-
-          case GasPriceType.Even:
-            evenGasPriceResults.push(diffInMilSecs);
-            break;
-
-          case GasPriceType.High:
-            highGasPriceResults.push(diffInMilSecs);
-            break;
-
-          default:
-            throw new Error(`undefined gasPriceType. ${gasPriceType}`);
-        }
-
-        console.log(
-          `account ${index} finished, gasPrice: ${gasPrice}, time: ${diffInMilSecs}m`
-        );
+        txs.push(sendTx);
       }
+      return Promise.all(txs)
+        .then((results) => {
+          return Promise.resolve(results);
+        })
+        .catch((err) => {
+          return Promise.reject(err);
+        });
     };
 
     for (const i of [...Array(executeNumber).keys()]) {
-      console.log(`=== start ${i + 1}th time ===`);
+      console.log(`=== start ${i + 1}th row ===`);
       await executeOneRow();
     }
 
