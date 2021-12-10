@@ -113,6 +113,9 @@ export class FeeTest extends Tester {
       const gasPriceId = counter;
       counter++;
 
+      const gasPrice = gasPriceList[gasPriceId];
+      const gasPriceType = getGasPriceTypeById(gasPriceId);
+
       const { Contract } = getWeb3(account.privateKey, ABI);
       const contract = new Contract(ABI, this.contractAddress);
 
@@ -127,35 +130,29 @@ export class FeeTest extends Tester {
             .transfer(nextAccount.ethAddress, 1)
             .send({
               from: account.ethAddress,
-              gasPrice: gasPriceList[gasPriceId],
+              gasPrice: gasPrice,
             });
           const date2 = new Date();
           const diffInMilSecs = date2.getTime() - date1.getTime();
           const result: ExecuteFeeResult = {
             receipt,
-            gasPrice: gasPriceList[gasPriceId],
-            gasPriceType: getGasPriceTypeById(gasPriceId),
+            gasPrice: gasPrice,
+            gasPriceType: gasPriceType,
             executeTimeInMilSecs: diffInMilSecs,
           };
           console.log(
-            `account ${index} finished, gasPrice: ${result.gasPrice}, time: ${result.executeTimeInMilSecs}m`
+            `account ${index} finished, gasPrice: ${result.gasPrice}, time: ${result.executeTimeInMilSecs}ms`
           );
           return resolve(result);
         } catch (error) {
+          console.log(`account ${index} failed, gasPrice: ${gasPrice}.`);
           return reject(error);
         }
       }) as Promise<ExecuteFeeResult>;
 
       executePromiseList.push(receiptTime);
     }
-    return Promise.all(executePromiseList)
-      .then((results) => {
-        return Promise.resolve(results);
-      })
-      .catch((err) => {
-        console.log("err =>", err);
-        return Promise.reject(err);
-      });
+    return Promise.allSettled(executePromiseList);
   }
 
   async runTest2() {
@@ -255,23 +252,18 @@ export class FeeTest extends Tester {
             }
 
             console.log(
-              `account ${index} finished, gasPrice: ${gasPrice}, time: ${diffInMilSecs}m`
+              `account ${index} finished, gasPrice: ${gasPrice}, time: ${diffInMilSecs}ms`
             );
 
             return resolve(receipt);
           } catch (error) {
+            console.log(`account ${index} failed, gasPrice: ${gasPrice}.`);
             return reject(error);
           }
         });
         txs.push(sendTx);
       }
-      return Promise.all(txs)
-        .then((results) => {
-          return Promise.resolve(results);
-        })
-        .catch((err) => {
-          return Promise.reject(err);
-        });
+      return Promise.allSettled(txs);
     };
 
     for (const i of [...Array(executeNumber).keys()]) {
@@ -305,7 +297,14 @@ export function calAverageTime(data: number[]) {
   return sum / data.length;
 }
 
-export async function outputTestReport(results: ExecuteFeeResult[]) {
+export async function outputTestReport(
+  settleResults: PromiseSettledResult<ExecuteFeeResult>[]
+) {
+  const results = settleResults
+    .filter((r) => r.status === "fulfilled")
+    .map((r: PromiseFulfilledResult<ExecuteFeeResult>) => {
+      return r.value;
+    });
   const sortResult = results.sort(
     (a, b) => a.executeTimeInMilSecs - b.executeTimeInMilSecs
   );
