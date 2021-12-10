@@ -3,6 +3,7 @@ import { TestAccount } from ".";
 import SudtContractArtifacts from "../../contracts/erc20.json";
 import { Tester } from "./base";
 import { deployContract, getWeb3 } from "./helper";
+import fs from "fs";
 
 const DEFAULT_MINI_CURRENT_GAS_PRICE = "200"; // only used when rpc gas price return 0x1;
 // 3 grades of gas price rate: price * RATE / 10;
@@ -52,19 +53,35 @@ export interface ExecuteFeeResult {
 export class FeeTest extends Tester {
   public contractAddress: string = null;
 
+  async prepareContract() {
+    if (this.contractAddress == null) {
+      // use the provide contract
+      if (process.env.ERC20_ADDRESS != null) {
+        this.contractAddress = process.env.ERC20_ADDRESS;
+        console.log("use contract from env =>", this.contractAddress);
+      } else {
+        this.contractAddress = await deployContract(
+          ABI,
+          BYTE_CODE,
+          DEPLOY_ARGS,
+          this.testAccounts[0].privateKey
+        );
+        console.log("successful deploy contract =>", this.contractAddress);
+
+        // write the contract address to env for use next time
+        await fs.appendFileSync(
+          process.env.ENV_PATH,
+          `\nERC20_ADDRESS=${this.contractAddress}`
+        );
+      }
+    }
+  }
+
   async run() {
     console.log("---- Run Test1 ----");
     const that = this;
 
-    if (this.contractAddress == null) {
-      this.contractAddress = await deployContract(
-        ABI,
-        BYTE_CODE,
-        DEPLOY_ARGS,
-        this.testAccounts[0].privateKey
-      );
-      console.log("successful deploy contract =>", this.contractAddress);
-    }
+    await this.prepareContract();
 
     const gasPrice = await getGasPrice();
     const currentGasPrice =
@@ -159,15 +176,7 @@ export class FeeTest extends Tester {
     console.log("---- Run Test2 ----");
     const that = this;
 
-    if (this.contractAddress == null) {
-      this.contractAddress = await deployContract(
-        ABI,
-        BYTE_CODE,
-        DEPLOY_ARGS,
-        this.testAccounts[0].privateKey
-      );
-      console.log("successful deploy contract =>", this.contractAddress);
-    }
+    await this.prepareContract();
 
     const gasPrice = await getGasPrice();
     const currentGasPrice =
