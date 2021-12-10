@@ -6,7 +6,14 @@ import {
 } from "./test-tool";
 import path from "path";
 
-const filePath = path.resolve(__dirname, "../test-accounts.json");
+const { ENV_PATH } = process.env;
+
+let filePath;
+if (ENV_PATH === "./.devnet.env") {
+  filePath = path.resolve(__dirname, "../devnet-test-accounts.json");
+} else {
+  filePath = path.resolve(__dirname, "../test-accounts.json");
+}
 
 const fee = async () => {
   const jsonData = await loadJsonFile(filePath);
