@@ -1,7 +1,5 @@
 # How to run
 
-pass `test-accounts.json` in project root dir. you can checkout the `test-accounts-example.json` for ref (the account id is optional, though).
-
 commands for different environments
 
 ```json
@@ -9,6 +7,20 @@ commands for different environments
     "start:devnet": "ENV_PATH=./.devnet.env ts-node ./src/index.ts",
     "start:testnet": "ENV_PATH=./.testnet.env ts-node ./src/index.ts",
     "start:mainnet": "ENV_PATH=./.mainnet.env ts-node ./src/index.ts",
+```
+
+## accounts
+
+### devnet
+
+pass `devnet-test-accounts.json` in project root dir. 
+
+you can checkout the `test-accounts-example.json` for ref (the account id is optional, though).
+
+### other testnet
+
+```sh
+yarn accounts
 ```
 
 ## test
