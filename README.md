@@ -42,3 +42,15 @@ MAX_ACCOUNTS=20 EXECUTE_NUMBER=20 yarn start:devnet
 the `MAX_ACCOUNTS` can be set from env to control how many accounts used for sending transaction to run the test 1.
 
 the `EXECUTE_NUMBER` (default is 10) can be set from env to control how many rounds you want the 3 accounts to continually send transaction to run the test 2.
+
+## forever mode (in ci/testnet/staging press test, etc)
+
+just add `MODE=forever` in your environment, the test will run forever.
+
+in forever mode, we execute one test1/test2, and then waits 5 seconds to execute the next round by default. if you want to change the wait interval time, you can set through .env variable too. just add `WAIT_INTERVAL_MILSEC=<milliseconds>` in your environment.
+
+example:
+
+```sh
+MODE=forever WAIT_INTERVAL_MILSEC=7000 MAX_ACCOUNT=10 EXECUTE_NUMBER=3 yarn start:devnet
+```

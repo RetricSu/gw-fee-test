@@ -138,3 +138,7 @@ export async function generateAlphaNetAccounts() {
   const filePath = path.resolve(__dirname, "../../test-accounts.json");
   await saveJsonFile(jsonData, filePath);
 }
+
+export function asyncSleep(ms = 0) {
+  return new Promise((r) => setTimeout(r, ms));
+}
