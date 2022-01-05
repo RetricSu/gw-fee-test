@@ -10,6 +10,7 @@ import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
 import { privKeys as predefinePrivateKeys } from "../configs/predefine-accounts";
+import fetch from "cross-fetch";
 const Contract = require("web3-eth-contract");
 
 dotenv.config({
@@ -17,6 +18,8 @@ dotenv.config({
 });
 
 const { web3_rpc } = process.env;
+
+export const TIMEOUT_SECONDS = 20;
 
 export interface TestAccount {
   ethAddress: HexString;
@@ -83,7 +86,6 @@ export function getWeb3(privateKey?: string, abiItems_?: AbiItems) {
     polyjuiceConfig
   );
   const web3 = new Web3(polyjuiceHttpProvider);
-  web3.eth.transactionPollingTimeout = 60; // overwrite 750s to 60s
   const polyjuiceAccounts = new PolyjuiceAccounts(
     polyjuiceConfig,
     polyjuiceHttpProvider
@@ -92,9 +94,21 @@ export function getWeb3(privateKey?: string, abiItems_?: AbiItems) {
   if (privateKey != null) {
     web3.eth.accounts.wallet.add(privateKey);
   }
-
   Contract.setProvider(polyjuiceHttpProvider, web3.eth.accounts);
   return { web3, Contract, polyjuiceHttpProvider, polyjuiceAccounts };
+}
+
+export function getProvider(abiItems_?: AbiItems) {
+  const abiItems = abiItems_ || [];
+  const polyjuiceConfig: PolyjuiceConfig = {
+    web3Url: web3_rpc,
+    abiItems,
+  };
+  const polyjuiceHttpProvider = new PolyjuiceHttpProvider(
+    polyjuiceConfig.web3Url,
+    polyjuiceConfig
+  );
+  return polyjuiceHttpProvider;
 }
 
 export async function loadJsonFile(
@@ -142,4 +156,17 @@ export async function generateAlphaNetAccounts() {
 
 export function asyncSleep(ms = 0) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+export async function sendBatchTx(batchTx: object[]) {
+  const res = await fetch(web3_rpc, {
+    body: JSON.stringify(batchTx),
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+  const result: any[] = await res.json();
+  return result.filter((r) => !r.err).map((r) => r.result);
 }

@@ -33,21 +33,27 @@ every test accounts will send only one transaction in total with different gasPr
 
 only take first 3 accounts, each account use a fix gasPrice to send one transaction in a row, then we execute N rows to collect the average receipt time for these 3 accounts and output it.
 
+- test3
+
+mostly like test1, but using batch request to reduce the rpc rate limit problem.
+
 by running the follow command, the test1 and test2 will be execute in order.
 
 ```sh
-MAX_ACCOUNTS=20 EXECUTE_NUMBER=20 yarn start:devnet
+yarn start:devnet
 ```
 
-the `MAX_ACCOUNTS` can be set from env to control how many accounts used for sending transaction to run the test 1.
+## env control
 
-the `EXECUTE_NUMBER` (default is 10) can be set from env to control how many rounds you want the 3 accounts to continually send transaction to run the test 2.
+- `MAX_ACCOUNTS`: can be set from env to control how many accounts used for sending transaction to run the test 1.
 
-## forever mode (in ci/testnet/staging press test, etc)
+- `EXECUTE_NUMBER`: (default is 10) can be set from env to control how many rounds you want the 3 accounts to continually send transaction to run the test 2.
 
-just add `MODE=forever` in your environment, the test will run forever.
+- `TEST_CASE`: (default is 0 means run all tests in order) can be set from env to control what specific test you want to run, eg: `TEST_CASE=3 yarn start:devnet` run test3 in devnet.
 
-in forever mode, we execute one test1/test2, and then waits 5 seconds to execute the next round by default. if you want to change the wait interval time, you can set through .env variable too. just add `WAIT_INTERVAL_MILSEC=<milliseconds>` in your environment.
+- `MODE=forever`: can be set from env to let the test will run forever.
+
+- `WAIT_INTERVAL_MILSEC`: can be set from env. in forever mode, if `TEST_CASE` is not `0`, we execute all test in order, and then waits 5 seconds to execute the next round by default. this env is use to change the wait interval time.
 
 example:
 
