@@ -2,7 +2,7 @@ import { AbiItems } from "@polyjuice-provider/base";
 import { TestAccount } from ".";
 import SudtContractArtifacts from "../../contracts/erc20.json";
 import { Tester } from "./base";
-import { deployContract, getWeb3 } from "./helper";
+import { deployContract, getWeb3, TIMEOUT_SECONDS } from "./helper";
 import fs from "fs";
 
 const DEFAULT_MINI_CURRENT_GAS_PRICE = "200"; // only used when rpc gas price return 0x1;
@@ -136,6 +136,9 @@ export class FeeTest extends Tester {
       const { Contract } = getWeb3(account.privateKey, ABI);
       const contract = new Contract(ABI, this.contractAddress);
 
+      contract.transactionBlockTimeout = TIMEOUT_SECONDS; // overwrite timeout seconds
+      contract.transactionPollingTimeout = TIMEOUT_SECONDS; // overwrite timeout seconds
+
       const receiptTime = new Promise(async (resolve, reject) => {
         try {
           const date1 = new Date();
@@ -162,7 +165,9 @@ export class FeeTest extends Tester {
           );
           return resolve(result);
         } catch (error) {
-          console.log(`account ${index} failed, gasPrice: ${gasPrice}. err: ${error.message}`);
+          console.log(
+            `account ${index} failed, gasPrice: ${gasPrice}. err: ${error.message}`
+          );
           return reject(error);
         }
       }) as Promise<ExecuteFeeResult>;

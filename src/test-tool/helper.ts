@@ -18,6 +18,8 @@ dotenv.config({
 
 const { web3_rpc } = process.env;
 
+export const TIMEOUT_SECONDS = 20;
+
 export interface TestAccount {
   ethAddress: HexString;
   privateKey: HexString;
@@ -83,7 +85,6 @@ export function getWeb3(privateKey?: string, abiItems_?: AbiItems) {
     polyjuiceConfig
   );
   const web3 = new Web3(polyjuiceHttpProvider);
-  web3.eth.transactionPollingTimeout = 60; // overwrite 750s to 60s
   const polyjuiceAccounts = new PolyjuiceAccounts(
     polyjuiceConfig,
     polyjuiceHttpProvider
@@ -92,7 +93,6 @@ export function getWeb3(privateKey?: string, abiItems_?: AbiItems) {
   if (privateKey != null) {
     web3.eth.accounts.wallet.add(privateKey);
   }
-
   Contract.setProvider(polyjuiceHttpProvider, web3.eth.accounts);
   return { web3, Contract, polyjuiceHttpProvider, polyjuiceAccounts };
 }
