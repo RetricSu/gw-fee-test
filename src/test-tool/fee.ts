@@ -446,58 +446,66 @@ export class FeeTest extends Tester {
           id: "0x" + crypto.randomBytes(8).toString("hex"),
         };
       });
-      const date1 = new Date();
-      console.log(`send ${batchTx.length} Batch transaction`);
-      const txHashes = await sendBatchTx(batchTx);
 
-      const chunkReceiptChecker = chunkTxs.map((res, id) => {
-        const txHash = txHashes[id];
-        const maxTimeOut = 3 * 60 * 1000; // time out for 3 minutes
-        const awaitInterval = 5 * 1000; //try fetch receipt every 5s
+      try {
+        console.log(`send ${batchTx.length} Batch transaction`);
+        const txHashes = await sendBatchTx(batchTx);
+        const date1 = new Date();
+        await asyncSleep(1000);
 
-        const fetchReceipt = new Promise(async (resolve, reject) => {
-          try {
-            let timeCounterMilsecs = 0;
-            while (true) {
+        const chunkReceiptChecker = chunkTxs.map((res, id) => {
+          const txHash = txHashes[id];
+          const maxTimeOut = 3 * 60 * 1000; // time out for 3 minutes
+          const awaitInterval = 5 * 1000; //try fetch receipt every 5s
+
+          const fetchReceipt = new Promise(async (resolve, reject) => {
+            try {
+              let timeCounterMilsecs = 0;
+              while (true) {
+                const txReceipt = await godwoker.eth_getTransactionReceipt(
+                  txHash
+                );
+                if (txReceipt != null) {
+                  break;
+                }
+                await asyncSleep(awaitInterval);
+                timeCounterMilsecs += awaitInterval;
+                if (timeCounterMilsecs > maxTimeOut) {
+                  return reject(
+                    new Error(`time out in ${maxTimeOut} milliseconds.`)
+                  );
+                }
+              }
+
               const txReceipt = await godwoker.eth_getTransactionReceipt(
                 txHash
               );
-              if (txReceipt != null) {
-                break;
-              }
-              await asyncSleep(5000);
-              timeCounterMilsecs += awaitInterval;
-              if (timeCounterMilsecs > maxTimeOut) {
-                return reject(
-                  new Error(`time out in ${maxTimeOut} mill seconds.`)
-                );
-              }
+              const date2 = new Date();
+              const diffInMilSecs = date2.getTime() - date1.getTime();
+              const sendTxResult: SendTransactionResult = {
+                txReceipt: txReceipt,
+                gasPrice: res.gasPrice,
+                gasPriceType: res.gasPriceType,
+                executeTimeInMilSecs: diffInMilSecs,
+              };
+              return resolve(sendTxResult);
+            } catch (error) {
+              return reject(error);
             }
+          });
 
-            const txReceipt = await godwoker.eth_getTransactionReceipt(txHash);
-            const date2 = new Date();
-            const diffInMilSecs = date2.getTime() - date1.getTime();
-            const sendTxResult: SendTransactionResult = {
-              txReceipt: txReceipt,
-              gasPrice: res.gasPrice,
-              gasPriceType: res.gasPriceType,
-              executeTimeInMilSecs: diffInMilSecs,
-            };
-            return resolve(sendTxResult);
-          } catch (error) {
-            return reject(error);
-          }
+          return {
+            gasPrice: res.gasPrice,
+            gasPriceType: res.gasPriceType,
+            getTime: async () => {
+              return fetchReceipt as Promise<SendTransactionResult>;
+            },
+          } as ReceiptChecker;
         });
-
-        return {
-          gasPrice: res.gasPrice,
-          gasPriceType: res.gasPriceType,
-          getTime: async () => {
-            return fetchReceipt as Promise<SendTransactionResult>;
-          },
-        } as ReceiptChecker;
-      });
-      receiptCheckers.push(...chunkReceiptChecker);
+        receiptCheckers.push(...chunkReceiptChecker);
+      } catch (error) {
+        console.log(`failed to send ${i}th batch transaction`);
+      }
     }
 
     for (const receiptChecker of receiptCheckers) {

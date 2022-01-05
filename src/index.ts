@@ -92,7 +92,11 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
 
 const run = async () => {
   const test = await initTest();
-  await execute(test);
+  try {
+    await execute(test);
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const execute = async (test: FeeTest) => {
