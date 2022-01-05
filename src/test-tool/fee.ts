@@ -162,7 +162,7 @@ export class FeeTest extends Tester {
           );
           return resolve(result);
         } catch (error) {
-          console.log(`account ${index} failed, gasPrice: ${gasPrice}.`);
+          console.log(`account ${index} failed, gasPrice: ${gasPrice}. err: ${error.message}`);
           return reject(error);
         }
       }) as Promise<ExecuteFeeResult>;
