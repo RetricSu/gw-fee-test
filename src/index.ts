@@ -90,6 +90,20 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
   }
 };
 
+const execute = async (test: FeeTest) => {
+  try {
+    if (MODE === "forever") {
+      await fee(test, testcaseNumber);
+      await asyncSleep(waitIntervalMilsec);
+      await execute(test);
+    }
+
+    return await fee(test, testcaseNumber);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const run = async () => {
   const test = await initTest();
   try {
@@ -97,16 +111,6 @@ const run = async () => {
   } catch (error) {
     console.log(error);
   }
-};
-
-const execute = async (test: FeeTest) => {
-  if (MODE === "forever") {
-    await fee(test, testcaseNumber);
-    await asyncSleep(waitIntervalMilsec);
-    await execute(test);
-  }
-
-  return await fee(test, testcaseNumber);
 };
 
 run();

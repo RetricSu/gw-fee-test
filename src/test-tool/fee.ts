@@ -426,6 +426,8 @@ export class FeeTest extends Tester {
           `account ${index} prepare raw tx failed, err: ${error.message}, gasPriceType: ${gasPriceType}`
         );
       }
+
+      await asyncSleep(1000);
     }
     console.log(
       `prepare ${rawTxResults.length} raw transactions, ready to batch send.`
