@@ -83,6 +83,7 @@ export function getWeb3(privateKey?: string, abiItems_?: AbiItems) {
     polyjuiceConfig
   );
   const web3 = new Web3(polyjuiceHttpProvider);
+  web3.eth.transactionPollingTimeout = 60; // overwrite 750s to 60s
   const polyjuiceAccounts = new PolyjuiceAccounts(
     polyjuiceConfig,
     polyjuiceHttpProvider
