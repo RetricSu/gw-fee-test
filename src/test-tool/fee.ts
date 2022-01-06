@@ -450,7 +450,7 @@ export class FeeTest extends Tester {
 
         const chunkReceiptChecker = chunkTxs.map((res, id) => {
           const txHash = txHashes[id];
-          const maxTimeOut = 2 * 60 * 1000; // time out for 3 minutes
+          const maxTimeOut = 1 * 60 * 1000; // time out for 3 minutes
           const awaitInterval = 5 * 1000; //try fetch receipt every 5s
 
           const fetchReceipt = new Promise(async (resolve, reject) => {
@@ -498,7 +498,7 @@ export class FeeTest extends Tester {
           } as ReceiptChecker;
         });
         receiptCheckers.push(...chunkReceiptChecker);
-        await asyncSleep(2000);
+        await asyncSleep(500);
       } catch (error) {
         console.log(`failed to send ${i}th batch transaction`);
       }
