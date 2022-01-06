@@ -178,9 +178,9 @@ export async function sendBatchTx(batchTx: object[]) {
     (r) => !r.error && r.result && typeof r.result === "string"
   );
   const failedResult = result.filter((r) => r.error);
-  if(failedResult.length > 0){
+  if (failedResult.length > 0) {
     console.log(failedResult);
-  } 
+  }
   console.log(`(${successResult.length}/${result.length})`);
   return successResult.map((r) => r.result as string);
 }
@@ -197,4 +197,46 @@ export async function getTransactionReceipt(txHash: string) {
     throw new Error(res.error);
   }
   return res.result;
+}
+
+export async function getAccountId(scriptHash: string) {
+  const payload = {
+    jsonrpc: "2.0",
+    method: "gw_get_account_id_by_script_hash",
+    params: [scriptHash],
+    id: "0x" + crypto.randomBytes(8).toString("hex"),
+  };
+  const res = await sendRpc(payload);
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  return res.result;
+}
+
+export async function getScriptHashByShortAddress(shortAddr: string) {
+  const payload = {
+    jsonrpc: "2.0",
+    method: "gw_get_script_hash_by_short_address",
+    params: [shortAddr],
+    id: "0x" + crypto.randomBytes(8).toString("hex"),
+  };
+  const res = await sendRpc(payload);
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  return res.result;
+}
+
+export async function getNonce(accountId: HexNumber) {
+  const payload = {
+    jsonrpc: "2.0",
+    method: "gw_get_nonce",
+    params: [accountId],
+    id: "0x" + crypto.randomBytes(8).toString("hex"),
+  };
+  const res = await sendRpc(payload);
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  return res.result as HexNumber;
 }

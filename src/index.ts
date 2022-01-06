@@ -80,6 +80,15 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
         }
         break;
 
+      case 4:
+        {
+          const results = await test.runTest4();
+          await outputTestReport(results);
+          console.log("--------");
+          console.log("");
+        }
+        break;
+
       default:
         console.log("invalid testcase number.");
         break;

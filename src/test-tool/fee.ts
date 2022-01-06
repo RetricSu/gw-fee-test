@@ -12,6 +12,13 @@ import {
 import fs from "fs";
 import crypto from "crypto";
 import { asyncSleep } from ".";
+import {
+  AccountInfo,
+  batchExecute,
+  buildSendContractSerializedTransaction,
+  initAccountsInfo,
+  initContractAccountInfo,
+} from "./txs";
 
 const DEFAULT_MINI_CURRENT_GAS_PRICE = "200"; // only used when rpc gas price return 0x1;
 // 3 grades of gas price rate: price * RATE / 10;
@@ -335,8 +342,6 @@ export class FeeTest extends Tester {
 
   async runTest3() {
     console.log("---- Run Test3 ----");
-    const that = this;
-
     await this.prepareContract();
 
     const gasPrice = await getGasPrice();
@@ -426,7 +431,6 @@ export class FeeTest extends Tester {
           `account ${index} prepare raw tx failed, err: ${error.message}, gasPriceType: ${gasPriceType}`
         );
       }
-
       await asyncSleep(prepareRawTxWaitTimeMilsec);
     }
     console.log(
@@ -548,9 +552,227 @@ export class FeeTest extends Tester {
           );
           return resolve(executeResult);
         } catch (error) {
-          console.log(
-            `account failed. err: ${error.message}`
+          console.log(`account failed. err: ${error.message}`);
+          return reject(error);
+        }
+      }) as Promise<ExecuteFeeResult>;
+      sendTxPromiseList.push(receiptTime);
+    }
+
+    return Promise.allSettled(sendTxPromiseList);
+  }
+
+  async runTest4() {
+    console.log("---- Run Test4 ----");
+    await this.prepareContract();
+
+    const gasPrice = await getGasPrice();
+    const currentGasPrice =
+      gasPrice === "1" ? DEFAULT_MINI_CURRENT_GAS_PRICE : gasPrice;
+
+    const lowGasPrice = (
+      (BigInt(currentGasPrice) * BigInt(LOW_RATE_IN_10)) /
+      BigInt(10)
+    ).toString(10);
+    const evenGasPrice = (
+      (BigInt(currentGasPrice) * BigInt(EVEN_RATE_IN_10)) /
+      BigInt(10)
+    ).toString(10);
+    const highGasPrice = (
+      (BigInt(currentGasPrice) * BigInt(HIGH_RATE_IN_10)) /
+      BigInt(10)
+    ).toString(10);
+    const gasPriceList = [lowGasPrice, evenGasPrice, highGasPrice];
+
+    console.log("gasPriceList", gasPriceList);
+
+    if (this.testAccounts.length === 0) {
+      console.log("zero test accounts, please try prepareTestAccounts first!");
+      return [];
+    }
+
+    console.log(
+      `load ${this.testAccounts.length} accounts, ready to test with ${
+        process.env.MAX_ACCOUNT || this.testAccounts.length
+      }.`
+    );
+
+    const sendBatchTxWaitTimeMilsec = 500;
+    const pollTransactionReceiptTimeOutMilsec = 60 * 1000; // time out for 1 minutes
+    const pollTransactionIntervalMilsec = 5 * 1000; //try fetch receipt every 5s
+
+    const testAccounts = this.testAccounts.slice(
+      0,
+      +process.env.MAX_ACCOUNT || this.testAccounts.length
+    );
+    const accountInfos = await batchExecute(testAccounts, initAccountsInfo);
+    const contractAccount = await initContractAccountInfo(this.contractAddress);
+
+    const prepareRawTxResults = async (accountInfos: AccountInfo[]) => {
+      const rawTxResults: RawTransactionResult[] = [];
+      const rawTxResPromises = accountInfos.map(async (account, index) => {
+        const gasPriceId: number = index >= 3 ? index % 3 : index;
+        const gasPrice = gasPriceList[gasPriceId];
+        const gasPriceType = getGasPriceTypeById(gasPriceId);
+
+        try {
+          const simpleErc20Transfer1CkbData = `0xa9059cbb000000000000000000000000${account.polyjuiceAddress.slice(
+            2
+          )}0000000000000000000000000000000000000000000000000000000000000001`;
+          const tx = {
+            from: account.ethAddress,
+            to: contractAccount.address,
+            data: simpleErc20Transfer1CkbData,
+            gasPrice: "0x" + BigInt(gasPrice).toString(16),
+            gas: "0xffffff",
+            value: "0x0",
+          };
+          const rawTx = await buildSendContractSerializedTransaction(
+            account,
+            contractAccount,
+            tx
           );
+          const rawTxRes: RawTransactionResult = {
+            rawTx: rawTx,
+            gasPrice,
+            gasPriceType,
+          };
+          return rawTxRes;
+        } catch (error) {
+          console.log(
+            `account ${account.ethAddress} prepare raw tx failed, err: ${error.message}, gasPriceType: ${gasPriceType}`
+          );
+        }
+      });
+
+      for (const rawTxResPromise of rawTxResPromises) {
+        const res = await rawTxResPromise;
+        rawTxResults.push(res);
+      }
+
+      return rawTxResults;
+    };
+
+    const rawTxResults = await batchExecute(accountInfos, prepareRawTxResults);
+    console.log(
+      `prepare ${rawTxResults.length} raw transactions, ready to batch send.`
+    );
+
+    const sendTxPromiseList: Promise<ExecuteFeeResult>[] = [];
+    const chunkSize = 20;
+    const receiptCheckers: ReceiptChecker[] = [];
+    for (let i = 0; i < rawTxResults.length; i += chunkSize) {
+      try {
+        const chunkTxs = rawTxResults.slice(i, i + chunkSize);
+        const batchTx = chunkTxs.map((res) => {
+          return {
+            jsonrpc: "2.0",
+            method: "poly_submitL2Transaction",
+            params: [res.rawTx],
+            id: "0x" + crypto.randomBytes(8).toString("hex"),
+          };
+        });
+        console.log(`send ${batchTx.length} Batch transaction`);
+        const txHashes = await sendBatchTx(batchTx);
+        const date1 = new Date();
+
+        const chunkReceiptChecker = chunkTxs.map((res, id) => {
+          const txHash = txHashes[id];
+          const fetchReceipt = new Promise(async (resolve, reject) => {
+            try {
+              let timeCounterMilsecs = 0;
+              let txReceipt: EthTransactionReceipt;
+
+              if (!txHash) {
+                const sendTxResult: SendTransactionResult = {
+                  txReceipt: null,
+                  gasPrice: res.gasPrice,
+                  gasPriceType: res.gasPriceType,
+                  executeTimeInMilSecs: null,
+                  err: new Error(
+                    `tx ${id} in batch ${
+                      i / chunkSize
+                    } failed to submit. gasPrice: ${res.gasPrice}`
+                  ),
+                };
+                return resolve(sendTxResult);
+                //return reject(`tx ${id} in batch ${i} failed to send.`);
+              }
+
+              while (true) {
+                try {
+                  await asyncSleep(pollTransactionIntervalMilsec);
+                  txReceipt = await getTransactionReceipt(txHash);
+                  if (txReceipt != null) {
+                    break;
+                  }
+
+                  timeCounterMilsecs += pollTransactionIntervalMilsec;
+                  if (
+                    timeCounterMilsecs > pollTransactionReceiptTimeOutMilsec
+                  ) {
+                    return reject(
+                      new Error(
+                        `gasPrice: ${res.gasPrice}, time out in ${pollTransactionReceiptTimeOutMilsec} milliseconds.`
+                      )
+                    );
+                  }
+                } catch (error) {
+                  if ((error.message as string).startsWith("request to")) {
+                    continue;
+                  }
+                  console.log(error.message);
+                }
+              }
+
+              const date2 = new Date();
+              const diffInMilSecs = date2.getTime() - date1.getTime();
+              const sendTxResult: SendTransactionResult = {
+                txReceipt: txReceipt,
+                gasPrice: res.gasPrice,
+                gasPriceType: res.gasPriceType,
+                executeTimeInMilSecs: diffInMilSecs,
+              };
+              return resolve(sendTxResult);
+            } catch (error) {
+              return reject(error);
+            }
+          });
+
+          return {
+            gasPrice: res.gasPrice,
+            gasPriceType: res.gasPriceType,
+            getTime: async () => {
+              return fetchReceipt as Promise<SendTransactionResult>;
+            },
+          } as ReceiptChecker;
+        });
+        receiptCheckers.push(...chunkReceiptChecker);
+        await asyncSleep(sendBatchTxWaitTimeMilsec);
+      } catch (error) {
+        console.log(`failed to send ${i}th batch transaction`);
+      }
+    }
+
+    for (const receiptChecker of receiptCheckers) {
+      const receiptTime = new Promise(async (resolve, reject) => {
+        try {
+          const res = await receiptChecker.getTime();
+          if (res.err) {
+            return reject(res.err);
+          }
+          const executeResult: ExecuteFeeResult = {
+            receipt: res.txReceipt,
+            gasPrice: res.gasPrice,
+            gasPriceType: res.gasPriceType,
+            executeTimeInMilSecs: res.executeTimeInMilSecs,
+          };
+          console.log(
+            `account finished, gasPrice: ${executeResult.gasPrice}, time: ${executeResult.executeTimeInMilSecs}ms`
+          );
+          return resolve(executeResult);
+        } catch (error) {
+          console.log(`account failed. err: ${error.message}`);
           return reject(error);
         }
       }) as Promise<ExecuteFeeResult>;
