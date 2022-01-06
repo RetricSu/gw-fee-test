@@ -372,6 +372,11 @@ export class FeeTest extends Tester {
 
     const rawTxResults: RawTransactionResult[] = [];
     const godwoker = getProvider(ABI).godwoker;
+    const prepareRawTxWaitTimeMilsec = 500;
+    const sendBatchTxWaitTimeMilsec = 500;
+    const pollTransactionReceiptTimeOutMilsec = 1 * 60 * 1000; // time out for 1 minutes
+    const pollTransactionIntervalMilsec = 5 * 1000; //try fetch receipt every 5s
+
     let counter: number = 0;
     for (const [index, account] of Object.entries(this.testAccounts)) {
       if (
@@ -423,7 +428,7 @@ export class FeeTest extends Tester {
         );
       }
 
-      await asyncSleep(1000);
+      await asyncSleep(prepareRawTxWaitTimeMilsec);
     }
     console.log(
       `prepare ${rawTxResults.length} raw transactions, ready to batch send.`
@@ -450,9 +455,6 @@ export class FeeTest extends Tester {
 
         const chunkReceiptChecker = chunkTxs.map((res, id) => {
           const txHash = txHashes[id];
-          const maxTimeOut = 1 * 60 * 1000; // time out for 3 minutes
-          const awaitInterval = 5 * 1000; //try fetch receipt every 5s
-
           const fetchReceipt = new Promise(async (resolve, reject) => {
             try {
               let timeCounterMilsecs = 0;
@@ -463,13 +465,17 @@ export class FeeTest extends Tester {
                   if (txReceipt != null) {
                     break;
                   }
-                  timeCounterMilsecs += awaitInterval;
-                  if (timeCounterMilsecs > maxTimeOut) {
+                  timeCounterMilsecs += pollTransactionIntervalMilsec;
+                  if (
+                    timeCounterMilsecs > pollTransactionReceiptTimeOutMilsec
+                  ) {
                     return reject(
-                      new Error(`time out in ${maxTimeOut} milliseconds.`)
+                      new Error(
+                        `time out in ${pollTransactionReceiptTimeOutMilsec} milliseconds.`
+                      )
                     );
                   }
-                  await asyncSleep(awaitInterval);
+                  await asyncSleep(pollTransactionIntervalMilsec);
                 } catch (error) {
                   console.log(error.message);
                 }
@@ -493,12 +499,14 @@ export class FeeTest extends Tester {
             gasPrice: res.gasPrice,
             gasPriceType: res.gasPriceType,
             getTime: async () => {
-              return fetchReceipt as Promise<SendTransactionResult>;
+              const res = await fetchReceipt;
+              return res as SendTransactionResult;
+              //return res as Promise<SendTransactionResult>;
             },
           } as ReceiptChecker;
         });
         receiptCheckers.push(...chunkReceiptChecker);
-        await asyncSleep(500);
+        await asyncSleep(sendBatchTxWaitTimeMilsec);
       } catch (error) {
         console.log(`failed to send ${i}th batch transaction`);
       }
