@@ -158,9 +158,9 @@ export function asyncSleep(ms = 0) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-export async function sendBatchTx(batchTx: object[]) {
+export async function sendRpc(payload: object | object[]) {
   const res = await fetch(web3_rpc, {
-    body: JSON.stringify(batchTx),
+    body: JSON.stringify(payload),
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -168,7 +168,12 @@ export async function sendBatchTx(batchTx: object[]) {
     method: "POST",
     keepalive: true,
   });
-  const result: any[] = await res.json();
+  const result: any[] | any = await res.json();
+  return result;
+}
+
+export async function sendBatchTx(batchTx: object[]) {
+  const result: any[] = await sendRpc(batchTx);
   const successResult = result.filter(
     (r) => !r.error && r.result && typeof r.result === "string"
   );
@@ -176,4 +181,18 @@ export async function sendBatchTx(batchTx: object[]) {
   console.log(failedResult);
   console.log(`(${successResult.length}/${result.length})`);
   return successResult.map((r) => r.result as string);
+}
+
+export async function getTransactionReceipt(txHash: string) {
+  const payload = {
+    jsonrpc: "2.0",
+    method: "eth_getTransactionReceipt",
+    params: [txHash],
+    id: "0x" + crypto.randomBytes(8).toString("hex"),
+  };
+  const res = await sendRpc(payload);
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  return res.result;
 }

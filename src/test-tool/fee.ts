@@ -6,8 +6,8 @@ import {
   deployContract,
   getWeb3,
   TIMEOUT_SECONDS,
-  getProvider,
   sendBatchTx,
+  getTransactionReceipt,
 } from "./helper";
 import fs from "fs";
 import crypto from "crypto";
@@ -371,7 +371,6 @@ export class FeeTest extends Tester {
     );
 
     const rawTxResults: RawTransactionResult[] = [];
-    const godwoker = getProvider(ABI).godwoker;
     const prepareRawTxWaitTimeMilsec = 500;
     const sendBatchTxWaitTimeMilsec = 500;
     const pollTransactionReceiptTimeOutMilsec = 30 * 1000; // time out for 30s
@@ -479,7 +478,7 @@ export class FeeTest extends Tester {
               while (true) {
                 try {
                   await asyncSleep(pollTransactionIntervalMilsec);
-                  txReceipt = await godwoker.eth_getTransactionReceipt(txHash);
+                  txReceipt = await getTransactionReceipt(txHash);
                   if (txReceipt != null) {
                     break;
                   }
