@@ -374,7 +374,7 @@ export class FeeTest extends Tester {
     const godwoker = getProvider(ABI).godwoker;
     const prepareRawTxWaitTimeMilsec = 500;
     const sendBatchTxWaitTimeMilsec = 500;
-    const pollTransactionReceiptTimeOutMilsec = 1 * 60 * 1000; // time out for 1 minutes
+    const pollTransactionReceiptTimeOutMilsec = 30 * 1000; // time out for 30s
     const pollTransactionIntervalMilsec = 5 * 1000; //try fetch receipt every 5s
 
     let counter: number = 0;
@@ -478,6 +478,7 @@ export class FeeTest extends Tester {
 
               while (true) {
                 try {
+                  await asyncSleep(pollTransactionIntervalMilsec);
                   txReceipt = await godwoker.eth_getTransactionReceipt(txHash);
                   if (txReceipt != null) {
                     break;
@@ -493,8 +494,6 @@ export class FeeTest extends Tester {
                       )
                     );
                   }
-
-                  await asyncSleep(pollTransactionIntervalMilsec);
                 } catch (error) {
                   console.log(error.message);
                 }

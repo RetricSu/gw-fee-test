@@ -166,6 +166,7 @@ export async function sendBatchTx(batchTx: object[]) {
       "Content-Type": "application/json",
     },
     method: "POST",
+    keepalive: true,
   });
   const result: any[] = await res.json();
   const successResult = result.filter(
