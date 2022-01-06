@@ -466,7 +466,11 @@ export class FeeTest extends Tester {
                   gasPrice: res.gasPrice,
                   gasPriceType: res.gasPriceType,
                   executeTimeInMilSecs: null,
-                  err: new Error(`tx ${id} in batch ${i} failed to send.`),
+                  err: new Error(
+                    `tx ${id} in batch ${
+                      i / chunkSize
+                    } failed to submit. gasPrice: ${res.gasPrice}`
+                  ),
                 };
                 return resolve(sendTxResult);
                 //return reject(`tx ${id} in batch ${i} failed to send.`);
