@@ -85,7 +85,7 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
         break;
     }
   } catch (error) {
-    console.log(error);
+    //console.log(error);
     process.exit(123);
   }
 };
@@ -100,7 +100,7 @@ const execute = async (test: FeeTest) => {
 
     return await fee(test, testcaseNumber);
   } catch (error) {
-    console.log(error);
+    //console.log(error);
   }
 };
 
@@ -109,7 +109,7 @@ const run = async () => {
   try {
     await execute(test);
   } catch (error) {
-    console.log(error);
+    //console.log(error);
   }
 };
 

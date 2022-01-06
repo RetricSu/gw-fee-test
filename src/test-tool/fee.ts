@@ -459,12 +459,26 @@ export class FeeTest extends Tester {
             try {
               let timeCounterMilsecs = 0;
               let txReceipt: EthTransactionReceipt;
+
+              if (!txHash) {
+                const sendTxResult: SendTransactionResult = {
+                  txReceipt: null,
+                  gasPrice: res.gasPrice,
+                  gasPriceType: res.gasPriceType,
+                  executeTimeInMilSecs: null,
+                  err: new Error(`tx ${id} in batch ${i} failed to send.`),
+                };
+                return resolve(sendTxResult);
+                //return reject(`tx ${id} in batch ${i} failed to send.`);
+              }
+
               while (true) {
                 try {
                   txReceipt = await godwoker.eth_getTransactionReceipt(txHash);
                   if (txReceipt != null) {
                     break;
                   }
+
                   timeCounterMilsecs += pollTransactionIntervalMilsec;
                   if (
                     timeCounterMilsecs > pollTransactionReceiptTimeOutMilsec
@@ -475,6 +489,7 @@ export class FeeTest extends Tester {
                       )
                     );
                   }
+
                   await asyncSleep(pollTransactionIntervalMilsec);
                 } catch (error) {
                   console.log(error.message);
@@ -499,9 +514,7 @@ export class FeeTest extends Tester {
             gasPrice: res.gasPrice,
             gasPriceType: res.gasPriceType,
             getTime: async () => {
-              const res = await fetchReceipt;
-              return res as SendTransactionResult;
-              //return res as Promise<SendTransactionResult>;
+              return fetchReceipt as Promise<SendTransactionResult>;
             },
           } as ReceiptChecker;
         });
@@ -568,6 +581,14 @@ export async function outputTestReport(
       } milsecs, status: ${result.receipt.status === "0x1"}`
     );
   });
+
+  console.log("=== failed result ===");
+  settleResults
+    .filter((r) => r.status === "rejected")
+    .map((r: PromiseRejectedResult) => {
+      console.log(`failed, ${r.reason}`);
+      return r.reason;
+    });
 }
 
 export async function getGasPrice() {

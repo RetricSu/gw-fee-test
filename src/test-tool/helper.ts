@@ -172,5 +172,5 @@ export async function sendBatchTx(batchTx: object[]) {
     (r) => !r.error && r.result && typeof r.result === "string"
   );
   console.log(`(${successResult.length}/${result.length})`);
-  return successResult.map((r) => r.result);
+  return successResult.map((r) => r.result as string);
 }
