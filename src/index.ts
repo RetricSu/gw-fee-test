@@ -39,7 +39,7 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
     switch (testNumber) {
       case 0:
         {
-          const results = await test.run();
+          const results = await test.runTest1();
           await outputTestReport(results);
           console.log("--------");
           console.log("");
@@ -47,16 +47,12 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
           await test.runTest2();
           console.log("--------");
           console.log("");
-
-          await test.runTest3();
-          console.log("--------");
-          console.log("");
         }
         break;
 
       case 1:
         {
-          const results = await test.run();
+          const results = await test.runTest1();
           await outputTestReport(results);
           console.log("--------");
           console.log("");
@@ -71,38 +67,37 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
         }
         break;
 
-      case 3:
-        {
-          const results = await test.runTest3();
-          await outputTestReport(results);
-          console.log("--------");
-          console.log("");
-        }
-        break;
-
       default:
         console.log("invalid testcase number.");
         break;
     }
   } catch (error) {
-    console.log(error);
+    //console.log(error);
     process.exit(123);
+  }
+};
+
+const execute = async (test: FeeTest) => {
+  try {
+    if (MODE === "forever") {
+      await fee(test, testcaseNumber);
+      await asyncSleep(waitIntervalMilsec);
+      await execute(test);
+    }
+
+    return await fee(test, testcaseNumber);
+  } catch (error) {
+    //console.log(error);
   }
 };
 
 const run = async () => {
   const test = await initTest();
-  await execute(test);
-};
-
-const execute = async (test: FeeTest) => {
-  if (MODE === "forever") {
-    await fee(test, testcaseNumber);
-    await asyncSleep(waitIntervalMilsec);
+  try {
     await execute(test);
+  } catch (error) {
+    //console.log(error);
   }
-
-  return await fee(test, testcaseNumber);
 };
 
 run();
