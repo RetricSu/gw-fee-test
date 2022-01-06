@@ -371,7 +371,7 @@ export class FeeTest extends Tester {
     );
 
     const rawTxResults: RawTransactionResult[] = [];
-    const prepareRawTxWaitTimeMilsec = 500;
+    const prepareRawTxWaitTimeMilsec = 0;
     const sendBatchTxWaitTimeMilsec = 500;
     const pollTransactionReceiptTimeOutMilsec = 30 * 1000; // time out for 30s
     const pollTransactionIntervalMilsec = 5 * 1000; //try fetch receipt every 5s
@@ -489,11 +489,14 @@ export class FeeTest extends Tester {
                   ) {
                     return reject(
                       new Error(
-                        `time out in ${pollTransactionReceiptTimeOutMilsec} milliseconds.`
+                        `gasPrice: ${res.gasPrice}, time out in ${pollTransactionReceiptTimeOutMilsec} milliseconds.`
                       )
                     );
                   }
                 } catch (error) {
+                  if ((error.message as string).startsWith("request to")) {
+                    continue;
+                  }
                   console.log(error.message);
                 }
               }
@@ -546,7 +549,7 @@ export class FeeTest extends Tester {
           return resolve(executeResult);
         } catch (error) {
           console.log(
-            `account failed, gasPrice: ${gasPrice}. err: ${error.message}`
+            `account failed. err: ${error.message}`
           );
           return reject(error);
         }
@@ -575,7 +578,7 @@ export async function outputTestReport(
     (a, b) => a.executeTimeInMilSecs - b.executeTimeInMilSecs
   );
   console.log("");
-  console.log("======= execute results =======");
+  console.log(`======= execute results: ${sortResult.length} =======`);
   sortResult.forEach((result) => {
     console.debug(
       `=> gasPrice ${result.gasPrice}, time: ${
@@ -584,13 +587,12 @@ export async function outputTestReport(
     );
   });
 
-  console.log("=== failed result ===");
-  settleResults
-    .filter((r) => r.status === "rejected")
-    .map((r: PromiseRejectedResult) => {
-      console.log(`failed, ${r.reason}`);
-      return r.reason;
-    });
+  const rejectResult = settleResults.filter((r) => r.status === "rejected");
+  console.log(`=== failed result: ${rejectResult.length} ===`);
+  rejectResult.map((r: PromiseRejectedResult) => {
+    console.log(`failed, ${r.reason}`);
+    return r.reason;
+  });
 }
 
 export async function getGasPrice() {
