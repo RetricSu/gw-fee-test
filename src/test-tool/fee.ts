@@ -1,9 +1,4 @@
-import {
-  Abi,
-  AbiItems,
-  Godwoker,
-  buildSendTransaction,
-} from "@polyjuice-provider/base";
+import { AbiItems, EthTransactionReceipt } from "@polyjuice-provider/base";
 import SudtContractArtifacts from "../../contracts/erc20.json";
 import { Tester } from "./base";
 import {
@@ -16,7 +11,6 @@ import {
 } from "./helper";
 import fs from "fs";
 import crypto from "crypto";
-import ClientBrowser from "jayson/lib/client/browser";
 import { asyncSleep } from ".";
 
 const DEFAULT_MINI_CURRENT_GAS_PRICE = "200"; // only used when rpc gas price return 0x1;
@@ -377,6 +371,7 @@ export class FeeTest extends Tester {
     );
 
     const rawTxResults: RawTransactionResult[] = [];
+    const godwoker = getProvider(ABI).godwoker;
     let counter: number = 0;
     for (const [index, account] of Object.entries(this.testAccounts)) {
       if (
@@ -396,21 +391,19 @@ export class FeeTest extends Tester {
       const gasPrice = gasPriceList[gasPriceId];
       const gasPriceType = getGasPriceTypeById(gasPriceId);
 
-      const { polyjuiceAccounts } = getWeb3(account.privateKey, ABI);
-
-      const simpleErc20Transfer1CkbData = `0xa9059cbb000000000000000000000000${account.ethAddress.slice(
-        2
-      )}0000000000000000000000000000000000000000000000000000000000000001`;
-      const tx = {
-        from: account.ethAddress,
-        to: this.contractAddress,
-        data: simpleErc20Transfer1CkbData,
-        gasPrice: "0x" + BigInt(gasPrice).toString(16),
-        gas: "0xffffff",
-        value: "0x0",
-      };
-
       try {
+        const { polyjuiceAccounts } = getWeb3(account.privateKey, ABI);
+        const simpleErc20Transfer1CkbData = `0xa9059cbb000000000000000000000000${account.ethAddress.slice(
+          2
+        )}0000000000000000000000000000000000000000000000000000000000000001`;
+        const tx = {
+          from: account.ethAddress,
+          to: this.contractAddress,
+          data: simpleErc20Transfer1CkbData,
+          gasPrice: "0x" + BigInt(gasPrice).toString(16),
+          gas: "0xffffff",
+          value: "0x0",
+        };
         const result = await polyjuiceAccounts.signTransaction(
           tx,
           account.privateKey
@@ -421,6 +414,9 @@ export class FeeTest extends Tester {
           gasPriceType,
         };
         rawTxResults.push(rawTxRes);
+        parseInt(index) % 5 === 0
+          ? console.log(`account ${index}th raw tx prepared.`)
+          : "";
       } catch (error) {
         console.log(
           `account ${index} prepare raw tx failed, err: ${error.message}, gasPriceType: ${gasPriceType}`
@@ -436,52 +432,49 @@ export class FeeTest extends Tester {
     const sendTxPromiseList: Promise<ExecuteFeeResult>[] = [];
 
     const chunkSize = 20;
-    const godwoker = getProvider(ABI).godwoker;
     const receiptCheckers: ReceiptChecker[] = [];
     for (let i = 0; i < rawTxResults.length; i += chunkSize) {
-      const chunkTxs = rawTxResults.slice(i, i + chunkSize);
-      const batchTx = chunkTxs.map((res) => {
-        return {
-          jsonrpc: "2.0",
-          method: "poly_submitL2Transaction",
-          params: [res.rawTx],
-          id: "0x" + crypto.randomBytes(8).toString("hex"),
-        };
-      });
-
       try {
+        const chunkTxs = rawTxResults.slice(i, i + chunkSize);
+        const batchTx = chunkTxs.map((res) => {
+          return {
+            jsonrpc: "2.0",
+            method: "poly_submitL2Transaction",
+            params: [res.rawTx],
+            id: "0x" + crypto.randomBytes(8).toString("hex"),
+          };
+        });
         console.log(`send ${batchTx.length} Batch transaction`);
         const txHashes = await sendBatchTx(batchTx);
         const date1 = new Date();
-        await asyncSleep(1000);
 
         const chunkReceiptChecker = chunkTxs.map((res, id) => {
           const txHash = txHashes[id];
-          const maxTimeOut = 3 * 60 * 1000; // time out for 3 minutes
+          const maxTimeOut = 2 * 60 * 1000; // time out for 3 minutes
           const awaitInterval = 5 * 1000; //try fetch receipt every 5s
 
           const fetchReceipt = new Promise(async (resolve, reject) => {
             try {
               let timeCounterMilsecs = 0;
+              let txReceipt: EthTransactionReceipt;
               while (true) {
-                const txReceipt = await godwoker.eth_getTransactionReceipt(
-                  txHash
-                );
-                if (txReceipt != null) {
-                  break;
-                }
-                await asyncSleep(awaitInterval);
-                timeCounterMilsecs += awaitInterval;
-                if (timeCounterMilsecs > maxTimeOut) {
-                  return reject(
-                    new Error(`time out in ${maxTimeOut} milliseconds.`)
-                  );
+                try {
+                  txReceipt = await godwoker.eth_getTransactionReceipt(txHash);
+                  if (txReceipt != null) {
+                    break;
+                  }
+                  timeCounterMilsecs += awaitInterval;
+                  if (timeCounterMilsecs > maxTimeOut) {
+                    return reject(
+                      new Error(`time out in ${maxTimeOut} milliseconds.`)
+                    );
+                  }
+                  await asyncSleep(awaitInterval);
+                } catch (error) {
+                  console.log(error.message);
                 }
               }
 
-              const txReceipt = await godwoker.eth_getTransactionReceipt(
-                txHash
-              );
               const date2 = new Date();
               const diffInMilSecs = date2.getTime() - date1.getTime();
               const sendTxResult: SendTransactionResult = {
@@ -505,6 +498,7 @@ export class FeeTest extends Tester {
           } as ReceiptChecker;
         });
         receiptCheckers.push(...chunkReceiptChecker);
+        await asyncSleep(2000);
       } catch (error) {
         console.log(`failed to send ${i}th batch transaction`);
       }
@@ -561,7 +555,9 @@ export async function outputTestReport(
   console.log("======= execute results =======");
   sortResult.forEach((result) => {
     console.debug(
-      `=> gasPrice ${result.gasPrice}, time: ${result.executeTimeInMilSecs} milsecs`
+      `=> gasPrice ${result.gasPrice}, time: ${
+        result.executeTimeInMilSecs
+      } milsecs, status: ${result.receipt.status === "0x1"}`
     );
   });
 }

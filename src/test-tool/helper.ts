@@ -168,5 +168,7 @@ export async function sendBatchTx(batchTx: object[]) {
     method: "POST",
   });
   const result: any[] = await res.json();
-  return result.filter((r) => !r.err).map((r) => r.result);
+  const successResult = result.filter((r) => !r.err);
+  console.log(`(${successResult.length}/${result.length})`);
+  return successResult.map((r) => r.result);
 }
