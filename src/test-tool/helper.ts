@@ -19,12 +19,17 @@ dotenv.config({
 
 const { web3_rpc } = process.env;
 
-export const TIMEOUT_SECONDS = 20;
-
 export interface TestAccount {
   ethAddress: HexString;
   privateKey: HexString;
   accountId?: null | HexNumber;
+}
+
+export interface JsonRpcPayload {
+  jsonrpc: "2.0" | "1.0";
+  method: string;
+  params: any[];
+  id: string | number;
 }
 
 export function newEthAccountList(length: number = 20) {
@@ -158,7 +163,7 @@ export function asyncSleep(ms = 0) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-export async function sendRpc(payload: object | object[]) {
+export async function requestRpc(payload: object | object[]) {
   const res = await fetch(web3_rpc, {
     body: JSON.stringify(payload),
     headers: {
@@ -172,8 +177,8 @@ export async function sendRpc(payload: object | object[]) {
   return result;
 }
 
-export async function sendBatchTx(batchTx: object[]) {
-  const result: any[] = await sendRpc(batchTx);
+export async function requestBatchRpc(batchPayload: object[]) {
+  const result: any[] = await requestRpc(batchPayload);
   const successResult = result.filter(
     (r) => !r.error && r.result && typeof r.result === "string"
   );
@@ -182,7 +187,12 @@ export async function sendBatchTx(batchTx: object[]) {
     console.log(failedResult);
   }
   console.log(`(${successResult.length}/${result.length})`);
-  return successResult.map((r) => r.result as string);
+  return result.map((r) => {
+    if (r.error) {
+      return null;
+    }
+    return r.result;
+  });
 }
 
 export async function getTransactionReceipt(txHash: string) {
@@ -192,7 +202,7 @@ export async function getTransactionReceipt(txHash: string) {
     params: [txHash],
     id: "0x" + crypto.randomBytes(8).toString("hex"),
   };
-  const res = await sendRpc(payload);
+  const res = await requestRpc(payload);
   if (res.error) {
     throw new Error(res.error);
   }
@@ -206,7 +216,7 @@ export async function getAccountId(scriptHash: string) {
     params: [scriptHash],
     id: "0x" + crypto.randomBytes(8).toString("hex"),
   };
-  const res = await sendRpc(payload);
+  const res = await requestRpc(payload);
   if (res.error) {
     throw new Error(res.error);
   }
@@ -220,7 +230,7 @@ export async function getScriptHashByShortAddress(shortAddr: string) {
     params: [shortAddr],
     id: "0x" + crypto.randomBytes(8).toString("hex"),
   };
-  const res = await sendRpc(payload);
+  const res = await requestRpc(payload);
   if (res.error) {
     throw new Error(res.error);
   }
@@ -234,7 +244,7 @@ export async function getNonce(accountId: HexNumber) {
     params: [accountId],
     id: "0x" + crypto.randomBytes(8).toString("hex"),
   };
-  const res = await sendRpc(payload);
+  const res = await requestRpc(payload);
   if (res.error) {
     throw new Error(res.error);
   }

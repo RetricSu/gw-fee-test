@@ -33,16 +33,6 @@ every test accounts will send only one transaction in total with different gasPr
 
 only take first 3 accounts, each account use a fix gasPrice to send one transaction in a row, then we execute N rows to collect the average receipt time for these 3 accounts and output it.
 
-- test3
-
-mostly like test1, but using batch request to reduce the rpc rate limit problem.
-
-by running the follow command, the test1 and test2 will be execute in order.
-
-```sh
-yarn start:devnet
-```
-
 ## env control
 
 - `MAX_ACCOUNTS`: can be set from env to control how many accounts used for sending transaction to run the test 1.
@@ -54,6 +44,10 @@ yarn start:devnet
 - `MODE=forever`: can be set from env to let the test will run forever.
 
 - `WAIT_INTERVAL_MILSEC`: can be set from env. in forever mode, if `TEST_CASE` is not `0`, we execute all test in order, and then waits 5 seconds to execute the next round by default. this env is use to change the wait interval time.
+
+- `POLL_TX_RECEIPT_TIME_OUT`: milliseconds, default 1m
+
+- `POLL_TX_RECEIPT_INTERVAL`: milliseconds, default 5s
 
 example:
 

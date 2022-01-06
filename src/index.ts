@@ -39,7 +39,7 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
     switch (testNumber) {
       case 0:
         {
-          const results = await test.run();
+          const results = await test.runTest1();
           await outputTestReport(results);
           console.log("--------");
           console.log("");
@@ -47,16 +47,12 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
           await test.runTest2();
           console.log("--------");
           console.log("");
-
-          await test.runTest3();
-          console.log("--------");
-          console.log("");
         }
         break;
 
       case 1:
         {
-          const results = await test.run();
+          const results = await test.runTest1();
           await outputTestReport(results);
           console.log("--------");
           console.log("");
@@ -66,24 +62,6 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
       case 2:
         {
           await test.runTest2();
-          console.log("--------");
-          console.log("");
-        }
-        break;
-
-      case 3:
-        {
-          const results = await test.runTest3();
-          await outputTestReport(results);
-          console.log("--------");
-          console.log("");
-        }
-        break;
-
-      case 4:
-        {
-          const results = await test.runTest4();
-          await outputTestReport(results);
           console.log("--------");
           console.log("");
         }
