@@ -120,7 +120,7 @@ export class FeeTest extends Tester {
   }
 
   async runTest1() {
-    console.log("---- Run Test4 ----");
+    console.log("---- Run Test1 ----");
     await this.prepareContract();
 
     const gasPrice = await getGasPrice();
