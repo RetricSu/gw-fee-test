@@ -2,7 +2,11 @@ import { HexNumber, HexString } from "@ckb-lumos/base";
 import Web3 from "web3";
 import crypto from "crypto";
 import keccak256 from "keccak256";
-import { AbiItems, PolyjuiceConfig } from "@polyjuice-provider/base";
+import {
+  AbiItems,
+  PolyjuiceConfig,
+  EthTransactionReceipt,
+} from "@polyjuice-provider/base";
 import PolyjuiceHttpProvider, {
   PolyjuiceAccounts,
 } from "@polyjuice-provider/web3";
@@ -195,7 +199,9 @@ export async function requestBatchRpc(batchPayload: object[]) {
   });
 }
 
-export async function getTransactionReceipt(txHash: string) {
+export async function getTransactionReceipt(
+  txHash: string
+): Promise<EthTransactionReceipt> {
   const payload = {
     jsonrpc: "2.0",
     method: "eth_getTransactionReceipt",

@@ -60,29 +60,29 @@ export function getGasPriceTypeById(id: number) {
 }
 
 export interface ExecuteFeeResult {
-  receipt: any;
+  receipt: EthTransactionReceipt;
   gasPrice: string;
   gasPriceType: GasPriceType;
   executeTimeInMilSecs: number;
-  accountId: number | string;
-  nonce: number | string;
+  accountId: number;
+  nonce: number;
 }
 
 export interface RawTransactionResult {
   rawTx: string | null;
   gasPrice: string;
   gasPriceType: GasPriceType;
-  accountId: number | string;
-  nonce: number | string;
+  accountId: number;
+  nonce: number;
 }
 
 export interface SendTransactionResult {
-  txReceipt: object | null;
+  txReceipt: EthTransactionReceipt | null;
   gasPrice: string;
   gasPriceType: GasPriceType;
   executeTimeInMilSecs: number | null;
-  accountId: number | string;
-  nonce: number | string;
+  accountId: number;
+  nonce: number;
   err?: Error;
 }
 
@@ -196,8 +196,8 @@ export class FeeTest extends Tester {
             rawTx: rawTx,
             gasPrice,
             gasPriceType,
-            accountId: account.accountId,
-            nonce,
+            accountId: parseInt(account.accountId),
+            nonce: parseInt(nonce),
           };
           return rawTxRes;
         } catch (error) {
@@ -251,6 +251,10 @@ export class FeeTest extends Tester {
       batchPayloads: JsonRpcPayload[][],
       rawTxResultsList: RawTransactionResult[][]
     ) => {
+      if (batchPayloads.length !== rawTxResultsList.length) {
+        throw new Error("batchPayloads.length !== rawTxResultsList.length");
+      }
+
       const receiptCheckers: ReceiptChecker[] = [];
       const receiptCheckerPromises = batchPayloads.map(
         async (payloads: JsonRpcPayload[], id) => {
@@ -298,7 +302,7 @@ export class FeeTest extends Tester {
                     ) {
                       return reject(
                         new Error(
-                          `accountId: ${rawTxResult.accountId}, nonce: ${rawTxResult.nonce}, gasPrice: ${rawTxResult.gasPrice}, time out in ${pollTransactionReceiptTimeOutMilsec} milliseconds.`
+                          `accountId: ${rawTxResult.accountId}, nonce: ${rawTxResult.nonce}, gasPrice: ${rawTxResult.gasPrice}, time out in ${pollTransactionReceiptTimeOutMilsec} milliseconds. txHash: ${txHash}`
                         )
                       );
                     }
@@ -527,9 +531,11 @@ export async function outputTestReport(
   console.log(`======= execute results: ${sortResult.length} =======`);
   sortResult.forEach((result) => {
     console.debug(
-      `=> gasPrice ${result.gasPrice}, time: ${
+      `=> account: ${result.accountId}, gasPrice ${result.gasPrice}, time: ${
         result.executeTimeInMilSecs
-      } milsecs, status: ${result.receipt.status === "0x1"}`
+      } milsecs, status: ${result.receipt.status === "0x1"}, nonce: ${
+        result.nonce
+      }, txHash: ${result.receipt.transactionHash}`
     );
   });
 
