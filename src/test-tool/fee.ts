@@ -216,8 +216,24 @@ export class FeeTest extends Tester {
     };
 
     const rawTxResults = await batchExecute(accountInfos, prepareRawTxResults);
+    const lowGasRawTxResults = rawTxResults.filter(
+      (res) => res.gasPriceType === GasPriceType.Low
+    );
+    const eveGasRawTxResults = rawTxResults.filter(
+      (res) => res.gasPriceType === GasPriceType.Even
+    );
+    const highGasRawTxResults = rawTxResults.filter(
+      (res) => res.gasPriceType === GasPriceType.High
+    );
+
     console.log(
-      `prepare ${rawTxResults.length} raw transactions, ready to batch send.`
+      `prepare ${rawTxResults.length} raw transactions: 
+
+   - Low Gas(${gasPriceList[0]}): ${lowGasRawTxResults.length}
+   - Even Gas(${gasPriceList[1]}): ${eveGasRawTxResults.length} 
+   - High Gas(${gasPriceList[2]}): ${highGasRawTxResults.length}
+
+ ready to batch send.`
     );
 
     const sendTxPromiseList: Promise<ExecuteFeeResult>[] = [];
