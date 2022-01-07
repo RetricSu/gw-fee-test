@@ -8,6 +8,7 @@ import {
   requestBatchRpc,
   getTransactionReceipt,
   JsonRpcPayload,
+  getNonce,
 } from "./helper";
 import fs from "fs";
 import crypto from "crypto";
@@ -63,12 +64,16 @@ export interface ExecuteFeeResult {
   gasPrice: string;
   gasPriceType: GasPriceType;
   executeTimeInMilSecs: number;
+  accountId: number | string;
+  nonce: number | string;
 }
 
 export interface RawTransactionResult {
   rawTx: string | null;
   gasPrice: string;
   gasPriceType: GasPriceType;
+  accountId: number | string;
+  nonce: number | string;
 }
 
 export interface SendTransactionResult {
@@ -76,6 +81,8 @@ export interface SendTransactionResult {
   gasPrice: string;
   gasPriceType: GasPriceType;
   executeTimeInMilSecs: number | null;
+  accountId: number | string;
+  nonce: number | string;
   err?: Error;
 }
 
@@ -178,15 +185,19 @@ export class FeeTest extends Tester {
             gas: "0xffffff",
             value: "0x0",
           };
-          const rawTx = await buildSendContractSerializedTransaction(
+          const nonce = await getNonce(account.accountId);
+          const rawTx = buildSendContractSerializedTransaction(
             account,
             contractAccount,
-            tx
+            tx,
+            nonce
           );
           const rawTxRes: RawTransactionResult = {
             rawTx: rawTx,
             gasPrice,
             gasPriceType,
+            accountId: account.accountId,
+            nonce,
           };
           return rawTxRes;
         } catch (error) {
@@ -264,8 +275,10 @@ export class FeeTest extends Tester {
                     gasPrice: rawTxResult.gasPrice,
                     gasPriceType: rawTxResult.gasPriceType,
                     executeTimeInMilSecs: null,
+                    accountId: rawTxResult.accountId,
+                    nonce: rawTxResult.nonce,
                     err: new Error(
-                      `tx failed to submit. gasPrice: ${rawTxResult.gasPrice}`
+                      `tx failed to submit. accountId: ${rawTxResult.accountId}, nonce: ${rawTxResult.nonce}, gasPrice: ${rawTxResult.gasPrice}`
                     ),
                   };
                   return resolve(sendTxResult);
@@ -285,7 +298,7 @@ export class FeeTest extends Tester {
                     ) {
                       return reject(
                         new Error(
-                          `gasPrice: ${rawTxResult.gasPrice}, time out in ${pollTransactionReceiptTimeOutMilsec} milliseconds.`
+                          `accountId: ${rawTxResult.accountId}, nonce: ${rawTxResult.nonce}, gasPrice: ${rawTxResult.gasPrice}, time out in ${pollTransactionReceiptTimeOutMilsec} milliseconds.`
                         )
                       );
                     }
@@ -304,6 +317,8 @@ export class FeeTest extends Tester {
                   gasPrice: rawTxResult.gasPrice,
                   gasPriceType: rawTxResult.gasPriceType,
                   executeTimeInMilSecs: diffInMilSecs,
+                  accountId: rawTxResult.accountId,
+                  nonce: rawTxResult.nonce,
                 };
                 return resolve(sendTxResult);
               } catch (error) {
@@ -345,9 +360,11 @@ export class FeeTest extends Tester {
             gasPrice: res.gasPrice,
             gasPriceType: res.gasPriceType,
             executeTimeInMilSecs: res.executeTimeInMilSecs,
+            accountId: res.accountId,
+            nonce: res.nonce,
           };
           console.log(
-            `account finished, gasPrice: ${executeResult.gasPrice}, time: ${executeResult.executeTimeInMilSecs}ms`
+            `account ${executeResult.accountId} finished, nonce: ${executeResult.nonce}, gasPrice: ${executeResult.gasPrice}, time: ${executeResult.executeTimeInMilSecs}ms`
           );
           return resolve(executeResult);
         } catch (error) {
