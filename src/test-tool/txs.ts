@@ -97,12 +97,12 @@ export async function initContractAccountInfo(address: HexString) {
   }
 }
 
-export async function buildSendContractSerializedTransaction(
+export function buildSendContractSerializedTransaction(
   caller: AccountInfo,
   contract: ContractAccountInfo,
-  ethTx: EthTransaction
+  ethTx: EthTransaction,
+  nonce: string
 ) {
-  const nonce = await getNonce(caller.accountId);
   const args = encodeArgs(ethTx);
   const rawL2Tx = {
     from_id: caller.accountId,
