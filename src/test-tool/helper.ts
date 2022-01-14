@@ -215,7 +215,7 @@ export async function getTransactionReceipt(
   return res.result;
 }
 
-export async function getAccountId(scriptHash: string) {
+export async function getAccountId(scriptHash: string): Promise<string | null> {
   const payload = {
     jsonrpc: "2.0",
     method: "gw_get_account_id_by_script_hash",

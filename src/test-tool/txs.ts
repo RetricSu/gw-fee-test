@@ -12,7 +12,6 @@ import {
   buildL2TransactionWithAddressMapping,
 } from "@polyjuice-provider/base";
 import { HexNumber, HexString } from "@ckb-lumos/base";
-import { getNonce } from ".";
 
 export interface AccountInfo extends TestAccount {
   scriptHash: HexString;
@@ -84,6 +83,11 @@ export async function initContractAccountInfo(address: HexString) {
   try {
     const scriptHash = await getScriptHashByShortAddress(address);
     const accountId = await getAccountId(scriptHash);
+    if (accountId == null) {
+      throw new Error(
+        `account ${address} has no accountId, please deposit first`
+      );
+    }
     console.log(`init contract account info ${address}`);
     return {
       address,
@@ -91,9 +95,11 @@ export async function initContractAccountInfo(address: HexString) {
       accountId,
     } as ContractAccountInfo;
   } catch (error) {
-    console.log(
-      `init contract account info failed ${address}, err: ${error.message}`
-    );
+    const msg = `init contract account info failed ${address}, err: ${JSON.stringify(
+      error
+    )}`;
+    console.log(msg);
+    throw new Error(msg);
   }
 }
 
