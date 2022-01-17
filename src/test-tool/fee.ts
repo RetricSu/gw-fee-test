@@ -326,7 +326,7 @@ export class FeeTest extends Tester {
                     if ((error.message as string).startsWith("request to")) {
                       continue;
                     }
-                    console.log(error.message);
+                    console.log(JSON.stringify(error.message));
                   }
                 }
 
@@ -383,12 +383,12 @@ export class FeeTest extends Tester {
             accountId: res.accountId,
             nonce: res.nonce,
           };
-          console.log(
-            `account ${executeResult.accountId} finished, nonce: ${executeResult.nonce}, gasPrice: ${executeResult.gasPrice}, time: ${executeResult.executeTimeInMilSecs}ms`
-          );
+          // console.log(
+          //   `account ${executeResult.accountId} finished, nonce: ${executeResult.nonce}, gasPrice: ${executeResult.gasPrice}, time: ${executeResult.executeTimeInMilSecs}ms`
+          // );
           return resolve(executeResult);
         } catch (error) {
-          console.log(`account failed. err: ${error.message}`);
+          //console.log(`account failed. err: ${error.message}`);
           return reject(error);
         }
       }) as Promise<ExecuteFeeResult>;
