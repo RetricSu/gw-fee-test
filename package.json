@@ -6,7 +6,8 @@
   "types": "lib/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "accounts": "ts-node ./src/use-pre-account.ts",
+    "account": "ts-node ./src/use-pre-account.ts",
+    "account:devnet": "ts-node ./src/use-devnet-account.ts",
     "start:alphanet": "ENV_PATH=./.alphanet.env ts-node ./src/index.ts",
     "start:devnet": "ENV_PATH=./.devnet.env ts-node ./src/index.ts",
     "start:testnet": "ENV_PATH=./.testnet.env ts-node ./src/index.ts",
