@@ -163,6 +163,42 @@ export async function generateAlphaNetAccounts() {
   await saveJsonFile(jsonData, filePath);
 }
 
+export async function generateDevnetAccounts(_total?: number) {
+  const total = _total || process.env.PREPARE_TOTAL_ACCOUNT || 1000; // default is 1000 accounts
+  const prepareMethod = "prepare_jam_accounts";
+  const prepareParams = `total=${total}`;
+
+  const polymanRpc = process.env.polyman_rpc || "http://localhost:6101";
+  const response = await fetch(
+    `${polymanRpc}/${prepareMethod}?${prepareParams}`
+  );
+  const jsonRes = await response.json();
+  if (jsonRes.status !== "ok") {
+    throw new Error(jsonRes);
+  }
+
+  const filePath = path.resolve(__dirname, "../../devnet-test-accounts.json");
+  await saveJsonFile(jsonRes.data, filePath);
+}
+
+export async function depositDevnetAccounts(_total?: number) {
+  const total = _total || process.env.PREPARE_TOTAL_ACCOUNT || 1000; // default is 1000 accounts
+  const depositMethod = "deposit_jam_accounts";
+  const depositParams = `total=${total}`;
+
+  const polymanRpc = process.env.polyman_rpc || "http://localhost:6101";
+  const response = await fetch(
+    `${polymanRpc}/${depositMethod}?${depositParams}`
+  );
+  const jsonRes = await response.json();
+  if (jsonRes.status !== "ok") {
+    throw new Error(jsonRes);
+  }
+  console.log(
+    `sent deposit ${total} accounts request on devnet. but you still need to wait for godwoken to collect those deposit.`
+  );
+}
+
 export function asyncSleep(ms = 0) {
   return new Promise((r) => setTimeout(r, ms));
 }

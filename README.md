@@ -13,14 +13,16 @@ commands for different environments
 
 ### devnet
 
-pass `devnet-test-accounts.json` in project root dir. 
+```sh
+yarn account:devnet
+```
 
-you can checkout the `test-accounts-example.json` for ref (the account id is optional, though).
+require running [kicker](https://github.com/RetricSu/godwoken-kicker) on background.
 
 ### other testnet
 
 ```sh
-yarn accounts
+yarn account
 ```
 
 ## test
@@ -48,6 +50,8 @@ only take first 3 accounts, each account use a fix gasPrice to send one transact
 - `POLL_TX_RECEIPT_TIME_OUT`: milliseconds, default 1m
 
 - `POLL_TX_RECEIPT_INTERVAL`: milliseconds, default 5s
+
+- `PREPARE_TOTAL_ACCOUNT`: generate devnet accounts count, default to 1000
 
 example:
 
