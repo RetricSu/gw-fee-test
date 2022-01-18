@@ -94,11 +94,12 @@ const execute = async (test: FeeTest) => {
 
 const run = async () => {
   if (TIMEOUT_MS) {
+    const timeoutMilsecs = +TIMEOUT_MS;
     const timeoutSecs = +TIMEOUT_MS / 1000;
     setTimeout(() => {
       console.log(`reach timeout ${timeoutSecs}s, exit.`);
       process.exit(0);
-    }, timeoutSecs);
+    }, timeoutMilsecs);
   }
 
   const test = await initTest();
