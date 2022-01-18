@@ -45,6 +45,8 @@ only take first 3 accounts, each account use a fix gasPrice to send one transact
 
 - `MODE=forever`: can be set from env to let the test will run forever.
 
+- `TIMEOUT_MS`: timeout milliseconds in forever mode
+
 - `WAIT_INTERVAL_MILSEC`: can be set from env. in forever mode, if `TEST_CASE` is not `0`, we execute all test in order, and then waits 5 seconds to execute the next round by default. this env is use to change the wait interval time.
 
 - `POLL_TX_RECEIPT_TIME_OUT`: milliseconds, default 1m
@@ -56,5 +58,5 @@ only take first 3 accounts, each account use a fix gasPrice to send one transact
 example:
 
 ```sh
-MODE=forever WAIT_INTERVAL_MILSEC=7000 MAX_ACCOUNT=10 EXECUTE_NUMBER=3 yarn start:devnet
+TESTCASE=1 MODE=forever TIMEOUT_MS=60000 WAIT_INTERVAL_MILSEC=7000 MAX_ACCOUNT=10 yarn start:devnet
 ```

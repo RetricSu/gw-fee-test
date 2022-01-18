@@ -7,7 +7,8 @@ import {
 } from "./test-tool";
 import path from "path";
 
-const { ENV_PATH, MODE, WAIT_INTERVAL_MILSEC, TEST_CASE } = process.env;
+const { ENV_PATH, MODE, WAIT_INTERVAL_MILSEC, TEST_CASE, TIMEOUT_MS } =
+  process.env;
 const waitIntervalMilsec = parseInt(WAIT_INTERVAL_MILSEC) || 5000; // wait 5 seconds
 const testcaseNumber = TEST_CASE ? parseInt(TEST_CASE) : 0;
 
@@ -92,6 +93,14 @@ const execute = async (test: FeeTest) => {
 };
 
 const run = async () => {
+  if (TIMEOUT_MS) {
+    const timeoutSecs = +TIMEOUT_MS / 1000;
+    setTimeout(() => {
+      console.log(`reach timeout ${timeoutSecs}s, exit.`);
+      process.exit(0);
+    }, timeoutSecs);
+  }
+
   const test = await initTest();
   try {
     await execute(test);
