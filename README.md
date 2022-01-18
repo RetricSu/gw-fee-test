@@ -58,5 +58,5 @@ only take first 3 accounts, each account use a fix gasPrice to send one transact
 example:
 
 ```sh
-TESTCASE=1 MODE=forever TIMEOUT_MS=60000 WAIT_INTERVAL_MILSEC=7000 MAX_ACCOUNT=10 yarn start:devnet
+TEST_CASE=1 MODE=forever TIMEOUT_MS=60000 WAIT_INTERVAL_MILSEC=7000 MAX_ACCOUNT=10 yarn start:devnet
 ```
