@@ -224,9 +224,13 @@ export async function requestBatchRpc(batchPayload: object[]) {
   );
   const failedResult = result.filter((r) => r.error);
   if (failedResult.length > 0) {
-    console.log(failedResult);
+    failedResult.forEach((r) => {
+      if (!r.error.message.includes("invalid nonce")) {
+        console.log(r);
+      }
+    });
   }
-  console.log(`(${successResult.length}/${result.length})`);
+  console.log(`sent batch request(${successResult.length}/${result.length})`);
   return result.map((r) => {
     if (r.error) {
       return null;

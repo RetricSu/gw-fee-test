@@ -94,6 +94,7 @@ export interface ReceiptChecker {
 
 export class FeeTest extends Tester {
   public contractAddress: string = null;
+  public gasPriceList: string[] = [];
 
   async prepareContract() {
     if (this.contractAddress == null) {
@@ -140,6 +141,8 @@ export class FeeTest extends Tester {
       BigInt(10)
     ).toString(10);
     const gasPriceList = [lowGasPrice, evenGasPrice, highGasPrice];
+
+    this.gasPriceList = gasPriceList;
 
     console.log("gasPriceList", gasPriceList);
 
@@ -229,9 +232,9 @@ export class FeeTest extends Tester {
     console.log(
       `prepare ${rawTxResults.length} raw transactions: 
 
-   - Low Gas(${gasPriceList[0]}): ${lowGasRawTxResults.length}
-   - Even Gas(${gasPriceList[1]}): ${eveGasRawTxResults.length} 
-   - High Gas(${gasPriceList[2]}): ${highGasRawTxResults.length}
+   - Low Gas(${gasPriceList[0]}): ${lowGasRawTxResults.length}txs
+   - Even Gas(${gasPriceList[1]}): ${eveGasRawTxResults.length}txs
+   - High Gas(${gasPriceList[2]}): ${highGasRawTxResults.length}txs
 
  ready to batch send.`
     );
@@ -280,7 +283,6 @@ export class FeeTest extends Tester {
             payloads
           );
           const date1 = new Date();
-          console.log(`send ${payloads.length} transactions in one Batch`);
 
           const chunkReceiptChecker = rawTxResults.map((rawTxResult, index) => {
             const txHash = txHashes[index];
@@ -298,7 +300,7 @@ export class FeeTest extends Tester {
                     accountId: rawTxResult.accountId,
                     nonce: rawTxResult.nonce,
                     err: new Error(
-                      `tx failed to submit. accountId: ${rawTxResult.accountId}, nonce: ${rawTxResult.nonce}, gasPrice: ${rawTxResult.gasPrice}`
+                      `tx failed to submit. accountId: ${rawTxResult.accountId}, gasPrice: ${rawTxResult.gasPrice}, nonce: ${rawTxResult.nonce}`
                     ),
                   };
                   return resolve(sendTxResult);
@@ -318,7 +320,7 @@ export class FeeTest extends Tester {
                     ) {
                       return reject(
                         new Error(
-                          `accountId: ${rawTxResult.accountId}, nonce: ${rawTxResult.nonce}, gasPrice: ${rawTxResult.gasPrice}, time out in ${pollTransactionReceiptTimeOutMilsec} milliseconds. txHash: ${txHash}`
+                          `accountId: ${rawTxResult.accountId}, gasPrice: ${rawTxResult.gasPrice}, nonce: ${rawTxResult.nonce}, time out in ${pollTransactionReceiptTimeOutMilsec} milliseconds. txHash: ${txHash}`
                         )
                       );
                     }
@@ -533,7 +535,8 @@ export function calAverageTime(data: number[]) {
 }
 
 export async function outputTestReport(
-  settleResults: PromiseSettledResult<ExecuteFeeResult>[]
+  settleResults: PromiseSettledResult<ExecuteFeeResult>[],
+  gasPriceList?: string[]
 ) {
   const results = settleResults
     .filter((r) => r.status === "fulfilled")
@@ -546,25 +549,90 @@ export async function outputTestReport(
   console.log("");
   console.log(`======= execute results: ${sortResult.length} =======`);
   sortResult.forEach((result) => {
+    const status = result.receipt.status === "0x1";
     console.debug(
-      `=> account: ${result.accountId}, gasPrice ${result.gasPrice}, time: ${
-        result.executeTimeInMilSecs
-      } milsecs, status: ${result.receipt.status === "0x1"}, nonce: ${
-        result.nonce
-      }, txHash: ${result.receipt.transactionHash}`
+      `=> account: ${result.accountId}, gasPrice ${result.gasPrice}, time: ${result.executeTimeInMilSecs} milsecs, status: ${status}, nonce: ${result.nonce}, txHash: ${result.receipt.transactionHash}`
     );
+    if (!status) {
+      // @ts-ignore
+      console.debug(result.receipt?.status_reason);
+    }
   });
 
   const rejectResult = settleResults.filter((r) => r.status === "rejected");
   console.log(`=== failed result: ${rejectResult.length} ===`);
+
+  await outputFailedGasPriceType(rejectResult, gasPriceList);
+
   rejectResult.map((r: PromiseRejectedResult) => {
     console.log(`failed, ${r.reason}`);
     return r.reason;
   });
 }
 
+export async function outputFailedGasPriceType(
+  rejectResult: PromiseSettledResult<ExecuteFeeResult>[],
+  gasPriceList?: string[]
+) {
+  const reasonTypes = {
+    timeout: "time out in",
+    failedToSubmit: "tx failed to submit",
+  };
+
+  gasPriceList = gasPriceList || (await getGasPriceList());
+
+  const lowGasTxs = rejectResult.filter((res: PromiseRejectedResult) =>
+    res.reason.message.includes(`gasPrice: ${gasPriceList[0]}`)
+  );
+  const evenGasTxs = rejectResult.filter((res: PromiseRejectedResult) =>
+    res.reason.message.includes(`gasPrice: ${gasPriceList[1]}`)
+  );
+  const highGasTxs = rejectResult.filter((res: PromiseRejectedResult) =>
+    res.reason.message.includes(`gasPrice: ${gasPriceList[2]}`)
+  );
+
+  const timeoutLowGasTx = lowGasTxs.filter((r: PromiseRejectedResult) =>
+    r.reason.message.includes(reasonTypes.timeout)
+  );
+  const timeoutEvenGasTx = evenGasTxs.filter((r: PromiseRejectedResult) =>
+    r.reason.message.includes(reasonTypes.timeout)
+  );
+  const timeoutHighGasTx = highGasTxs.filter((r: PromiseRejectedResult) =>
+    r.reason.message.includes(reasonTypes.timeout)
+  );
+
+  console.log(
+    `failed Txs from gasPrice low -> high: ${lowGasTxs.length} ${evenGasTxs.length} ${highGasTxs.length}`
+  );
+  console.log(
+    `timeout Txs from gasPrice low -> high:  ${timeoutLowGasTx.length} ${timeoutEvenGasTx.length} ${timeoutHighGasTx.length}`
+  );
+}
+
 export async function getGasPrice() {
   const { web3 } = getWeb3();
   const price = await web3.eth.getGasPrice();
   return price;
+}
+
+export async function getGasPriceList() {
+  const gasPrice = await getGasPrice();
+  const currentGasPrice =
+    gasPrice === "1" ? DEFAULT_MINI_CURRENT_GAS_PRICE : gasPrice;
+
+  const lowGasPrice = (
+    (BigInt(currentGasPrice) * BigInt(LOW_RATE_IN_10)) /
+    BigInt(10)
+  ).toString(10);
+  const evenGasPrice = (
+    (BigInt(currentGasPrice) * BigInt(EVEN_RATE_IN_10)) /
+    BigInt(10)
+  ).toString(10);
+  const highGasPrice = (
+    (BigInt(currentGasPrice) * BigInt(HIGH_RATE_IN_10)) /
+    BigInt(10)
+  ).toString(10);
+  const gasPriceList = [lowGasPrice, evenGasPrice, highGasPrice];
+
+  return gasPriceList;
 }

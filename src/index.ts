@@ -54,7 +54,7 @@ const fee = async (test: FeeTest, testNumber: number = 0) => {
       case 1:
         {
           const results = await test.runTest1();
-          await outputTestReport(results);
+          await outputTestReport(results, test.gasPriceList);
           console.log("--------");
           console.log("");
         }
