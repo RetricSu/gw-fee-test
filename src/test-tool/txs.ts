@@ -31,7 +31,7 @@ const godwoker = getProvider().godwoker;
 export async function batchExecute<T, K>(
   data: T[],
   executeFunction: (data: T[]) => Promise<K[]>,
-  chunkSize: number = 100
+  chunkSize: number = 120
 ) {
   const result: K[] = [];
   for (let i = 0; i < data.length; i += chunkSize) {
