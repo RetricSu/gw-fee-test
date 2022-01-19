@@ -288,7 +288,7 @@ export class FeeTest extends Tester {
             const txHash = txHashes[index];
             const fetchReceipt = new Promise(async (resolve, reject) => {
               try {
-                let timeCounterMilsecs = 0;
+                let pollTxStartTime = new Date();
                 let txReceipt: EthTransactionReceipt;
 
                 if (!txHash) {
@@ -308,15 +308,11 @@ export class FeeTest extends Tester {
 
                 while (true) {
                   try {
-                    await asyncSleep(pollTransactionIntervalMilsec);
-                    txReceipt = await getTransactionReceipt(txHash);
-                    if (txReceipt != null) {
-                      break;
-                    }
+                    const pollDiffTimeMilsec =
+                      new Date().getTime() - pollTxStartTime.getTime();
 
-                    timeCounterMilsecs += pollTransactionIntervalMilsec;
                     if (
-                      timeCounterMilsecs > pollTransactionReceiptTimeOutMilsec
+                      pollDiffTimeMilsec > pollTransactionReceiptTimeOutMilsec
                     ) {
                       return reject(
                         new Error(
@@ -324,6 +320,12 @@ export class FeeTest extends Tester {
                         )
                       );
                     }
+
+                    txReceipt = await getTransactionReceipt(txHash);
+                    if (txReceipt != null) {
+                      break;
+                    }
+                    await asyncSleep(pollTransactionIntervalMilsec);
                   } catch (error) {
                     if ((error.message as string).startsWith("request to")) {
                       continue;
