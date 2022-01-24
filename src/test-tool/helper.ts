@@ -250,7 +250,7 @@ export async function getTransactionReceipt(
   };
   const res = await requestRpc(payload);
   if (res.error) {
-    throw new Error(res.error);
+    throw new Error(JSON.stringify(res.error));
   }
   return res.result;
 }
@@ -264,7 +264,7 @@ export async function getAccountId(scriptHash: string): Promise<string | null> {
   };
   const res = await requestRpc(payload);
   if (res.error) {
-    throw new Error(res.error);
+    throw new Error(JSON.stringify(res.error));
   }
   return res.result;
 }
@@ -278,7 +278,7 @@ export async function getScriptHashByShortAddress(shortAddr: string) {
   };
   const res = await requestRpc(payload);
   if (res.error) {
-    throw new Error(res.error);
+    throw new Error(JSON.stringify(res.error));
   }
   return res.result;
 }
@@ -292,7 +292,7 @@ export async function getNonce(accountId: HexNumber) {
   };
   const res = await requestRpc(payload);
   if (res.error) {
-    throw new Error(res.error);
+    throw new Error(JSON.stringify(res.error));
   }
   return res.result as HexNumber;
 }
