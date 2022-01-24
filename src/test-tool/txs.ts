@@ -82,6 +82,11 @@ export async function initContractAccountInfo(address: HexString) {
   await godwoker.init();
   try {
     const scriptHash = await getScriptHashByShortAddress(address);
+    if (scriptHash == null) {
+      throw new Error(
+        `account ${address} has no scriptHash, please deposit first`
+      );
+    }
     const accountId = await getAccountId(scriptHash);
     if (accountId == null) {
       throw new Error(
