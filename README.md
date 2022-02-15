@@ -60,3 +60,9 @@ example:
 ```sh
 TEST_CASE=1 MODE=forever TIMEOUT_MS=60000 WAIT_INTERVAL_MILSEC=7000 MAX_ACCOUNT=10 yarn start:devnet
 ```
+
+api pressure test:
+
+```sh
+MAX_ACCOUNT=5 TOTAL_DUPLICATE=5 TOTAL_WRONG_DUPLICATE=200 yarn api:devnet
+```
