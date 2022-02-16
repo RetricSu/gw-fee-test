@@ -50,19 +50,6 @@ export class ApiTest extends FeeTest {
     const duplicateWrongParamsListLength =
       +process.env.TOTAL_WRONG_DUPLICATE || 1000;
 
-    const prepareWrongRawTxResults = async (accountInfos: AccountInfo[]) => {
-      const account = accountInfos[0];
-      const rawTxRes = await callBalanceOfWrongTransaction(
-        account,
-        contractAccount
-      );
-      return new Array(duplicateWrongParamsListLength).fill(rawTxRes);
-    };
-    const wrongRawTxResults = await batchExecute(
-      accountInfos,
-      prepareWrongRawTxResults
-    );
-
     const prepareUniqueRawTxResults = async (accountInfos: AccountInfo[]) => {
       const rawTxResults = [];
       const rawTxResPromises = accountInfos.map(async (account, _index) => {
@@ -98,9 +85,17 @@ export class ApiTest extends FeeTest {
 
     // send duplicate wrong call balanceOf(so that apis can cache)
     console.log("send duplicate wrong call balanceOf(so that apis can cache)");
-    const duplicateWrongParamsList = wrongRawTxResults.map((val) => [
-      val.rawTx,
-    ]);
+    const prepareWrongParamsList = async (accountInfos: AccountInfo[]) => {
+      const account = accountInfos[0];
+      const rawTxRes = await callBalanceOfWrongTransaction(
+        account,
+        contractAccount
+      );
+      return new Array(duplicateWrongParamsListLength)
+        .fill(rawTxRes)
+        .map((d) => [d.rawTx]);
+    };
+    const duplicateWrongParamsList = await prepareWrongParamsList(accountInfos);
     await sendAllPayloads(method, duplicateWrongParamsList);
   }
 }
