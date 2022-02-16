@@ -6,6 +6,4 @@ export class Tester {
   constructor(testAccounts: TestAccount[]) {
     this.testAccounts = testAccounts || [];
   }
-
-  run() {}
 }

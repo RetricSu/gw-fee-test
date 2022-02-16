@@ -10,6 +10,7 @@ import {
   EthTransaction,
   Signer,
   buildL2TransactionWithAddressMapping,
+  buildRawL2TransactionWithAddressMapping,
 } from "@polyjuice-provider/base";
 import { HexNumber, HexString } from "@ckb-lumos/base";
 
@@ -132,4 +133,21 @@ export function buildSendContractSerializedTransaction(
   const l2Tx = { raw: rawL2Tx, signature };
   const polyL2Tx = buildL2TransactionWithAddressMapping(l2Tx, []);
   return godwoker.serializeL2TransactionWithAddressMapping(polyL2Tx);
+}
+
+export function buildCallContractSerializedTransaction(
+  caller: AccountInfo,
+  contract: ContractAccountInfo,
+  ethTx: EthTransaction,
+  nonce: string
+): HexString {
+  const args = encodeArgs(ethTx);
+  const rawL2Tx = {
+    from_id: caller.accountId,
+    to_id: contract.accountId,
+    args,
+    nonce,
+  };
+  const polyL2Tx = buildRawL2TransactionWithAddressMapping(rawL2Tx, []);
+  return godwoker.serializeRawL2TransactionWithAddressMapping(polyL2Tx);
 }

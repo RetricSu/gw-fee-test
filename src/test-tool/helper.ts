@@ -29,10 +29,12 @@ export interface TestAccount {
   accountId?: null | HexNumber;
 }
 
+export type JsonRpcPayloadParams = any[];
+
 export interface JsonRpcPayload {
   jsonrpc: "2.0" | "1.0";
   method: string;
-  params: any[];
+  params: JsonRpcPayloadParams;
   id: string | number;
 }
 
@@ -219,9 +221,7 @@ export async function requestRpc(payload: object | object[]) {
 
 export async function requestBatchRpc(batchPayload: object[]) {
   const result: any[] = await requestRpc(batchPayload);
-  const successResult = result.filter(
-    (r) => !r.error && r.result && typeof r.result === "string"
-  );
+  const successResult = result.filter((r) => !r.error && r.result);
   const failedResult = result.filter((r) => r.error);
   if (failedResult.length > 0) {
     failedResult.forEach((r) => {
@@ -295,4 +295,26 @@ export async function getNonce(accountId: HexNumber) {
     throw new Error(JSON.stringify(res.error));
   }
   return res.result as HexNumber;
+}
+
+export async function loadAccounts() {
+  const { ENV_PATH } = process.env;
+  let filePath;
+  if (ENV_PATH === "./.devnet.env") {
+    filePath = path.resolve(__dirname, "../../devnet-test-accounts.json");
+  } else {
+    filePath = path.resolve(__dirname, "../../test-accounts.json");
+  }
+  const jsonData = await loadJsonFile(filePath);
+  if (jsonData == null) {
+    throw new Error("you must provide account json file!");
+  }
+
+  console.log(
+    `load test accounts from json file. total accounts: ${
+      (jsonData as TestAccount[]).length
+    }`
+  );
+
+  return jsonData as TestAccount[];
 }

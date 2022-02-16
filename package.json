@@ -14,6 +14,10 @@
     "start:devnet": "ENV_PATH=./.devnet.env ts-node ./src/index.ts",
     "start:testnet": "ENV_PATH=./.testnet.env ts-node ./src/index.ts",
     "start:mainnet": "ENV_PATH=./.mainnet.env ts-node ./src/index.ts",
+    "api:alphanet": "ENV_PATH=./.alphanet.env ts-node ./src/api.ts",
+    "api:devnet": "ENV_PATH=./.devnet.env ts-node ./src/api.ts",
+    "api:testnet": "ENV_PATH=./.testnet.env ts-node ./src/api.ts",
+    "api:mainnet": "ENV_PATH=./.mainnet.env ts-node ./src/api.ts",
     "fmt": "prettier --write \"src/*.ts\" \"src/**/*.ts\" package.json",
     "lint": "eslint -c .eslintrc.js \"src/*.ts\" \"src/**/*.ts\""
   },
